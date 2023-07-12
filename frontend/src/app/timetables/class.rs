@@ -5,13 +5,12 @@ pub mod limitations;
 
 pub fn home(id: i32) -> impl zoon::Element {
     zoon::Column::new()
-        //.s(zoon::Align::center())
-        .s(zoon::Padding::all(10))
-        .item(Row::new()
-            .item(limitations::schedule_table())
-            .item(activities::activities_view(id))
-            .s(Gap::new().x(10))
-        )
+    .s(Padding::new().top(20))
+    .item(Row::new()
+        .item(limitations::schedule_table())
+        .item(activities::activities_view(id))
+        .s(Gap::new().x(10))
+    )
 }
 
 #[static_ref]

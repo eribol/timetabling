@@ -5,7 +5,7 @@ use shared::{
 };
 use zoon::{named_color::*, *};
 
-use super::teacher::{self, limitations::get_t_l};
+use super::{teacher::{self, limitations::get_t_l}, add_act::teacher_short_name};
 
 #[static_ref]
 fn show_teachers()->&'static Mutable<bool>{
@@ -18,22 +18,30 @@ pub fn selected_teacher()->&'static Mutable<Option<i32>>{
 }
 pub fn home() -> impl Element {
     Column::new()
-    .item_signal(
-        show_teachers().signal().map_bool(|| teachers_view().into_raw_element(), || show_button().into_raw_element())
+    .item(teachers_view())
+    .item(
+        show_button()
     ).item_signal(selected_teacher().signal().map_some(|id|{
         teacher::home(id)
     }))
 }
 
 fn show_button()->impl Element{
-    Button::new().label("Öğretmenleri göster").on_click(|| show_teachers().set(true))
+    Button::new().label_signal(
+        show_teachers().signal().map_bool(||"Gizle", || "Tümünü Göster")
+    )
+    .on_click(||{
+        let s = show_teachers().get();
+        show_teachers().set(!s);            
+    })
 }
 
 fn teachers_view()-> impl Element{
     Row::new()
-    .multiline()
+    .multiline_signal(show_teachers().signal())
     .s(Padding::new().x(50))
-    .s(Gap::new().x(10).y(10)).items_signal_vec(teachers().signal_vec_cloned().map(|row| {
+    .s(Gap::new().x(10).y(10))
+    .items_signal_vec(teachers().signal_vec_cloned().map(|row| {
         let a = Mutable::new(false);
         Column::new()
         .s(Borders::all_signal(a.signal().map_bool(
@@ -65,7 +73,7 @@ fn teachers_view()-> impl Element{
                     }
                 }))
             )
-            .label(format!("{}", row.id))
+            .label(format!("{}", teacher_name(row.clone())))
         )
         .on_click(move ||{
             show_teachers().set(false);
@@ -86,4 +94,11 @@ pub fn teachers() -> &'static MutableVec<Teacher> {
 
 pub fn get_teachers() {
     send_msg(UpMsg::GetTeachers)
+}
+
+fn teacher_name(teacher: Teacher)-> String{
+    if teacher.short_name.len()==0{
+        return format!("{} {}", teacher.first_name, teacher.last_name);
+    }
+    teacher.short_name
 }

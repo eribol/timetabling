@@ -5,13 +5,15 @@ use shared::msgs::lectures::Lecture;
 use shared::msgs::teachers::Teacher;
 use zoon::{named_color::*, *};
 
+use crate::i18n::t;
 use crate::connection::send_msg;
-use super::class::{cls_id, selected_class};
+use crate::elements::buttons;
+use super::class::selected_class;
 use super::{lectures, classes, selected_timetable, teachers::{teachers, selected_teacher}};
 
 #[static_ref]
 pub fn add_act()->&'static Mutable<bool>{
-    Mutable::new(false)
+    Mutable::new(true)
 }
 
 #[static_ref]
@@ -103,8 +105,8 @@ fn filter_classes(value: String){
             //.to_vec()
             .iter()
             .filter(|class| 
-                class.1.label().contains(&value)
-            ).map(|c| c.1.clone()).collect()
+                class.label().contains(&value)
+            ).map(|c| c.clone()).collect()
         )
     }
     else{
@@ -143,7 +145,7 @@ fn change_hour(value: String){
     }   
 }
 
-pub fn add_act_view()->impl Element{
+fn add_act_view()->impl Element{
     Column::new()
         .s(Gap::new().y(10))
         .item(lectures_view())
@@ -151,6 +153,30 @@ pub fn add_act_view()->impl Element{
         .item(
             activity_classes()
         ).item(activity_teachers())
+}
+
+pub fn home()->impl Element{
+    Column::new()
+    .item_signal(
+        add_act().signal().map_true(add_act_view)
+    ).item(alt_buttons())
+}
+
+fn alt_buttons()->impl Element{
+    Row::new()
+    .s(Align::center())
+    .item(
+        buttons::default_with_signal(t!("add"))
+        .s(Height::exact(25))
+        //
+        //.s(Width::exact(100))
+        .on_click(send_act)
+    )
+    .item(
+        Button::new()
+        .label_signal(add_act().signal().map_bool(|| "Göster", || "Gizle"))
+        .on_click(change_add_act)
+    )
 }
 
 fn lectures_view()->impl Element{
@@ -552,10 +578,10 @@ pub fn teachers_full_name(act: FullActivity) -> String {
 
 pub fn classes_full_name(act: FullActivity) -> String {
     //let mut name = "A".to_string();
-    let clss = classes().lock_mut();
+    let clss = classes().lock_mut().to_vec();
     let full_cl = act.classes.iter()
     .map(|id|{
-        let cl = clss.get(&id)
+        let cl = clss.iter().find(|c| c.id == *id)
         .unwrap();
         format!("{}{}",cl.kademe, cl.sube)
     }).collect::<String>();

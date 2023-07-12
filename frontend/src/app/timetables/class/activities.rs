@@ -1,7 +1,7 @@
 use zoon::{named_color::*,*};
 use shared::msgs::activities::FullActivity;
-use crate::app::timetables::add_act::{add_act_view, send_act, teachers_full_name, add_act, change_add_act, ActCol, lecture_name, teacher_short_name, del_act, classes_full_name};
-use crate::app::timetables::activities;
+use crate::app::timetables::add_act::{home, send_act, teachers_full_name, add_act, change_add_act, ActCol, lecture_name, teacher_short_name, del_act, classes_full_name};
+use crate::app::timetables::{activities, schedules};
 use crate::elements::*;
 use crate::i18n::t;
 
@@ -12,7 +12,7 @@ pub fn activities_view(id: i32)->impl Element{
         .s(Width::fill())
         .item_signal(
             add_act().signal().map_true(||
-                add_act_view()
+                home()
             )
         )
         .item_signal(
@@ -43,7 +43,7 @@ pub fn activities_view(id: i32)->impl Element{
                 .filter_signal_cloned(move |acts| 
                     Mutable::new(
                         acts.classes.iter()
-                        .any(|c| c == &id)
+                        .any(|c| c == &id) && !schedules().lock_ref().iter().any(|s| s.activity == acts.id)
                     )
                     .signal()
                 )
@@ -114,32 +114,32 @@ fn act_view(act: ActCol)->impl Element{
                 }
             )
         ).item(
-            Label::new()
-            .s(Font::new().color(RED_6))
-            .label_signal(
-                move_select().signal_cloned().map(move |mv|{
-                    match mv{
-                        Some(m) => {
-                            if m.id == act_id{
-                                "Vazgeç"
-                            }
-                            else{""}
-                        },
-                        None => "Taşı"
+                Label::new()
+                .s(Font::new().color(RED_6))
+                .s(Cursor::new(CursorIcon::Pointer))
+                .s(Align::center())
+                .on_click(move || 
+                    if move_select().get_cloned().is_some() && 
+                    move_select().get_cloned().unwrap().id == act_id{
+                        move_select().set(None);                        
                     }
-                })
-            )
-            .s(Cursor::new(CursorIcon::Pointer))
-            .s(Align::center())
-            .on_click(move || 
-                if move_select().get_cloned().is_some() && 
-                move_select().get_cloned().unwrap().id == act_id{
-                    move_select().set(None);                        
-                }
-                else{
-                    move_select().set(Some(a_c2.get_cloned().clone()));
-                }
-            )
+                    else{
+                        move_select().set(Some(a_c2.get_cloned().clone()));
+                    }
+                )
+                .label_signal(
+                    move_select().signal_cloned().map(move |mv|{
+                        match mv{
+                            Some(m) => {
+                                if m.id == act_id{
+                                    "Vazgeç"
+                                }
+                                else{""}
+                            },
+                            None => "Taşı"
+                        }
+                    })
+                )
         )
     ).update_raw_el(|raw_el| {
             raw_el
@@ -182,6 +182,13 @@ fn act_view(act: ActCol)->impl Element{
                     },
                 )
         })
+}
+
+#[static_ref]
+pub fn is_placed(act: i32)-> &'static Mutable<bool>{
+    let schs = schedules().lock_mut().to_vec();
+    let p = schs.iter().any(|s| s.activity == act);
+    Mutable::new(p)
 }
 
 #[static_ref]

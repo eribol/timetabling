@@ -3,7 +3,7 @@ use shared::UpMsg;
 use zoon::{named_color::*,*};
 use shared::msgs::activities::{FullActivity, AddActivity, ActivityUpMsgs};
 use crate::app::timetables::classes::classes;
-use crate::app::timetables::{lectures, selected_timetable, activities};
+use crate::app::timetables::{lectures, selected_timetable, activities, schedules};
 
 use crate::elements::{*, self};
 use crate::i18n::t;
@@ -14,27 +14,8 @@ pub fn activities_view(id: i32)->impl Element{
         //.s(Align::new().right())
         .s(Align::new().top())
         .s(Width::fill())
-        .item_signal(
-            add_act().signal().map_true(||
-                add_act_view()
-            )
-        )
-        .item_signal(
-            add_act().signal().map(|s|{
-                if !s{
-                    buttons::default_with_signal(t!("add"))
-                    .s(Height::exact(25))
-                    .on_click(change_add_act).s(Align::center()).s(Width::exact(100))
-                }
-                else{
-                    buttons::default_with_signal(t!("add"))
-                    .s(Height::exact(25))
-                    .on_click(||{
-                        send_act();
-                        change_add_act();
-                    }).s(Align::center()).s(Width::exact(100))
-                }
-            })
+        .item(    
+            home()
         )
         .s(Padding::new().left(20))
         .item(
@@ -47,7 +28,7 @@ pub fn activities_view(id: i32)->impl Element{
                 .filter_signal_cloned(move |acts| 
                     Mutable::new(
                         acts.teachers.iter()
-                        .any(|t| t == &id)
+                        .any(|t| t == &id) && !schedules().lock_ref().iter().any(|s| s.activity == acts.id)
                     )
                     .signal()
                 )

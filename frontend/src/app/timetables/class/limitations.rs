@@ -1,15 +1,18 @@
-use zoon::*;
+use shared::msgs::activities::FullActivity;
+use zoon::{eprintln, *};
 use zoon::named_color::*;
-use crate::app::timetables::classes;
-use crate::app::timetables::{schedules};
+use crate::app::timetables::add_act::{teacher_short_name, lecture_name, teachers_full_name};
+use crate::app::timetables::{schedules, activities};
 use crate::connection::*;
 use crate::i18n::t;
 use crate::elements::*;
 use shared::msgs::{classes::*, timetables::{Schedule, TimetableUpMsgs}};
 
-use super::{cls_id, activities::{self, move_select}, selected_class};
+use super::selected_class;
+use super::{cls_id, activities::{self, move_select}};
 
-
+pub const LIM_HEIGHT: u32 = 75;
+pub const LIM_WIDTH: u32 = 120;
 #[static_ref]
 pub fn class_limitations() -> &'static MutableVec<ClassLimitation> {
     MutableVec::new_with_values(vec![])
@@ -28,7 +31,7 @@ pub fn loaded_lims()->&'static Mutable<bool>{
 
 pub fn schedule_table() -> impl Element {
     Column::new()
-        .item(
+    .item(
             Row::new()
                 .s(Align::new().left())
                 //.s(Padding::new().top(10))
@@ -50,8 +53,8 @@ fn hours_column_view()-> impl Element{
     Column::new()
         .s(Align::new().top())
         .item(Button::new()
-            .s(Height::exact(50))
-            .s(Width::exact(120))
+            .s(Height::exact(LIM_HEIGHT))
+            .s(Width::exact(LIM_WIDTH))
             .label("Günler/Saatler")
             .s(Borders::all(Border::new().width(1).solid().color(BLUE_3))),
         )
@@ -60,8 +63,8 @@ fn hours_column_view()-> impl Element{
             .enumerate()
             .map(|hour| {Button::new()
                 .label(hour.0.get().unwrap_throw() as i32)
-                .s(Height::exact(50))
-                .s(Width::exact(120))
+                .s(Height::exact(LIM_HEIGHT))
+                .s(Width::exact(LIM_WIDTH))
                 .s(Borders::new()
                     .bottom(Border::new().width(1).solid().color(BLUE_3))
                     .left(Border::new().width(1).solid().color(BLUE_3))
@@ -74,8 +77,8 @@ fn lim_col_view(day: usize)-> impl Element{
         .s(Align::new().top())
         .item(Button::new()
             //.s(Align::new())
-            .s(Height::exact(50))        
-            .s(Width::exact(100))
+            .s(Height::exact(LIM_HEIGHT))        
+            .s(Width::exact(LIM_WIDTH))
             .label_signal(t!(crate::DAYS[day-1]))
             .s(Borders::new()        
                 .bottom(Border::new().width(1).solid().color(BLUE_3))
@@ -112,21 +115,35 @@ fn lim_col_view(day: usize)-> impl Element{
                 )
         })
 }
-
+fn placed(act: &FullActivity, hour: usize, day: i32){
+    for i in 0..act.hour{
+        schedules().lock_mut()
+        .push_cloned(
+            Schedule{
+                day_id: day as i32,
+                locked: false,
+                activity: act.id.clone(),
+                hour: (hour as i16+i) as i32
+        });
+    }
+    let acts = activities().lock_mut().to_vec();
+    activities().lock_mut().replace_cloned(acts);
+    move_select().set(None)
+}
 fn hour_view(h: bool, day: ClassLimitation, hour: usize)->impl Element{
     let d_clone = day.clone();
-    let d_id = d_clone.day;
+    //let d_id = d_clone.day;
     let s: Mutable<bool> = Mutable::new(h);
     Column::new()
     .s(Background::new()
         .color_signal(s.signal().map_bool(|| BLUE_1, || GRAY_2)))
-    .s(Height::exact(50))        
-    .s(Width::exact(100))
+    .s(Height::exact(LIM_HEIGHT))        
+    .s(Width::exact(LIM_WIDTH))
     .s(Borders::new()        
         .bottom(Border::new().width(1).solid().color(BLUE_3))
         .right(Border::new().width(1).solid().color(BLUE_3))
     )
-    //.on_click(move || change_lim(day.day, hour))
+    .on_double_click(move || change_lim(day.day, hour))
     .item_signal({
         activities::move_select()
         .signal_cloned().map(move |ms|{
@@ -137,14 +154,7 @@ fn hour_view(h: bool, day: ClassLimitation, hour: usize)->impl Element{
                     .s(Cursor::new(CursorIcon::Pointer))
                     .label("Yerleştir")
                     .on_press(move || {
-                        schedules().lock_mut().push_cloned(Schedule{
-                            id: 0,
-                            day_id: d_id,
-                            locked: false,
-                            activity: s.id.clone(),
-                            hour: hour as i32
-                        });
-                        move_select().set(None)
+                        placed(&s, hour, day.day);
                     }))
                 },
                 None =>{
@@ -153,11 +163,35 @@ fn hour_view(h: bool, day: ClassLimitation, hour: usize)->impl Element{
                         schedules()
                         .signal_vec_cloned()
                         .to_signal_map(move |s|{
-                            let a = s.iter().find(|s2| &s2.day_id == &d_clone.day && s2.hour == hour as i32);
+                            let a = s.iter().find(|s2| &s2.day_id == &d_clone.day && s2.hour == hour as i32 
+                                && activities()
+                                .lock_ref()
+                                .iter()
+                                .any(|a| s2.activity == a.id && a.classes
+                                    .iter()
+                                    .any(|c| c == &selected_class()
+                                        .get_cloned().unwrap().id
+                                    )
+                                )
+                            );
                             match a{
                                 Some(s) => {
+                                    let act_id = s.activity;
+                                    let acts = activities().lock_mut().to_vec();
+                                    let act = acts.iter().find(|a| a.id == s.activity).unwrap();
                                     Column::new()
-                                    .item(Button::new().label(format!("{}", s.id)))
+                                    .item(
+                                        Button::new()
+                                        .label(
+                                            lecture_name(act.clone())
+                                        )
+                                    ).item(
+                                        Button::new()
+                                        .label(
+                                            //"A"
+                                            teachers_full_name(act.clone())
+                                        )
+                                    )
                                     .item(
                                         Row::new()
                                         .s(Align::center())
@@ -166,7 +200,12 @@ fn hour_view(h: bool, day: ClassLimitation, hour: usize)->impl Element{
                                         .item(
                                             Button::new()
                                             .label("Kaldır")
-                                            .on_click(|| ())
+                                            .on_click(move || {
+                                                let mut schs = schedules().lock_mut().to_vec();
+                                                //let s: Vec<(usize, Schedule)> = schs.into_iter().enumerate().filter(|sc| act_id == sc.1.activity).collect();
+                                                schs.retain(|s| s.activity != act_id);
+                                                schedules().lock_mut().replace_cloned(schs);
+                                            })
                                         )
                                         .item(Button::new().label("Kilitle").on_click(|| ()))
                                     )
@@ -184,10 +223,15 @@ fn hour_view(h: bool, day: ClassLimitation, hour: usize)->impl Element{
 
 fn alt_buttons()->impl Element{
     Row::new()
+    .s(Padding::new().top(15))
+    .s(Gap::new().x(10))
     .item(buttons::default_with_signal(t!("save-changes"))
         .on_click(add_lim)
     ).item(
         buttons::default_with_signal(t!("save-changes-for-all-classes"))
+        .on_click(add_lim_classes)
+    ).item(
+        buttons::_default("Ders  programını kaydet")
         .on_click(add_lim_classes)
     )
 }
@@ -222,13 +266,15 @@ pub fn add_lim(){
     send_msg(shared::UpMsg::Timetable(t_msg));
 }
 
+pub fn save_schedules(){
+    let form = schedules().lock_mut().to_vec();
+    //let t_msg = TimetableUpMsgs::;
+    //send_msg(shared::UpMsg::Timetable(t_msg));
+}
+
 pub fn add_lim_classes(){
     let g_id = super::super::selected_timetable().get();
-    let clss = super::super::classes::classes()
-        .lock_mut()
-        .iter()
-        .find(|c| c.1.group_id == g_id ).unwrap();
-    let mut form = class_limitations().lock_mut().to_vec();
+    let form = class_limitations().lock_mut().to_vec();
     let c_msg = ClassUpMsgs::UpdateLimitations((g_id, form.clone()));
     let t_msg = TimetableUpMsgs::Class(c_msg);
     send_msg(shared::UpMsg::Timetable(t_msg));

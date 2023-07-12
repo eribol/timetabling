@@ -39,12 +39,8 @@ pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
         },
         DownMsg::Timetable(msg) => {
             match msg {
-                TimetableDownMsgs::GetClasses(classes)=>{
-                    let mut hash_classes: HashMap<i32, Class> = HashMap::new();
-                    for c in classes{
-                        hash_classes.insert(c.id, c);
-                    } 
-                    classes::classes().set(hash_classes);
+                TimetableDownMsgs::GetClasses(classes)=>{ 
+                    classes::classes().lock_mut().replace_cloned(classes);
                 },
                 TimetableDownMsgs::GetClassesLimitations(lims)=>{
                     create_classes_limitations(lims);

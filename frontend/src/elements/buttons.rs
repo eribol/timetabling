@@ -15,7 +15,9 @@ pub fn default_with_signal<'a>(
         )))
         .s(Height::exact(50))
         .s(RoundedCorners::all(2))
-        .label(Label::new().label_signal(label).s(Align::center()))
+        .label(
+            Label::new().label_signal(label).s(Align::center()).s(Font::new().weight(FontWeight::Light))
+        )
         .on_focused_change(move |hovered| a.set(hovered))
 }
 

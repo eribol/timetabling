@@ -14,7 +14,7 @@ use shared::msgs::lectures::*;
 
 use self::add_act::{change_act_classes, change_act_teachers};
 use self::class::selected_class;
-use self::classes::{classes_view, classes};
+use self::classes::{classes_page_view, classes};
 use self::teachers::{teachers, selected_teacher};
 
 
@@ -153,7 +153,7 @@ pub fn timetable_tabs() -> impl Element {
 pub fn pages_view()-> impl Element{
     Column::new().item_signal(selected_page().signal().map(|page| {
         match page{
-            TimetablePages::Classes => classes_view().into_raw_element(),
+            TimetablePages::Classes => classes_page_view().into_raw_element(),
             TimetablePages::Teachers => teachers::home().into_raw_element(),
             TimetablePages::Generator => generator::home().into_raw_element(),
         }
@@ -236,10 +236,10 @@ pub fn create_teachers_limitations(mut lims: Vec<TeacherLimitation>){
     timetables::teachers_limitations().set(new_lims);
 }
 pub fn create_classes_limitations(mut lims: Vec<ClassLimitation>){
-    let clss = classes::classes().lock_mut();
+    let clss = classes::classes().lock_mut().to_vec();
     //let clss = clss.values();
     let t_len = selected_timetable_hour().lock_mut().to_vec().len();
-    for c in clss.values(){
+    for c in &clss{
         let c_lims = lims.iter().filter(|l| l.class_id == c.id.clone()).collect::<Vec<&ClassLimitation>>();
         let mut shifted = false;
         for i in 1..=7{
@@ -260,7 +260,7 @@ pub fn create_classes_limitations(mut lims: Vec<ClassLimitation>){
         }
     }
     let mut new_lims: HashMap<i32, Vec<ClassLimitation>> = HashMap::new();
-    for c in clss.values(){
+    for c in &clss{
         let c_lims = lims.clone().into_iter().filter(|l| l.class_id == c.id.clone()).collect::<Vec<ClassLimitation>>();
         new_lims.insert(c.id, c_lims.clone());
     }
