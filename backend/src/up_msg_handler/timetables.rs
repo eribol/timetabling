@@ -9,6 +9,7 @@ use shared::{DownMsg, UpMsg};
 use sqlx::Row;
 
 use super::classes::update_class_limitations;
+use super::school::is_teachers_valid;
 use super::teachers::update_teacher_limitations;
 
 pub async fn timetable_msg(msg: TimetableUpMsgs, school_id: i32)->DownMsg{
@@ -148,7 +149,6 @@ pub async fn get_schedules(school_id: i32, group_id: i32) -> DownMsg {
     let mut schedules = vec![];
     while let Some(g) = groups_query.try_next().await.unwrap() {
         let act = shared::msgs::timetables::Schedule {
-            id: g.try_get("id").unwrap(),
             day_id: g.try_get("day_id").unwrap(),
             hour: g.try_get("hour").unwrap(),
             activity: g.try_get("activity").unwrap(),
@@ -159,11 +159,33 @@ pub async fn get_schedules(school_id: i32, group_id: i32) -> DownMsg {
     DownMsg::Timetable(TimetableDownMsgs::GetSchedules(schedules))
 }
 
+pub async fn update_schedules(school_id: i32, group_id: i32, schedules: Vec<Schedule>) -> DownMsg {
+    let db = POSTGRES.read().await;
+    let acts = schedules.iter().map(|s| s.activity).collect::<Vec<i32>>();
+    let mut del_schedules = sqlx::query(r#"delete from class_timetable where activity = any($1)"#)
+        .bind(&acts)
+        .execute(&*db).await;
+    for s in schedules{
+        let mut groups_query = 
+        sqlx::query(r#"insert into class_timetable(activity, day, hour, locked) values($1, $2, $3, $4)"#)
+        .bind(&s.activity)
+        .bind(&s.day_id)
+        .bind(&s.hour)
+        .bind(&s.locked)
+        .execute(&*db);
+    }
+    let mut schedules = vec![];
+    DownMsg::Timetable(TimetableDownMsgs::GetSchedules(schedules))
+}
+
 pub async fn add_activity(school_id: i32, group_id: i32, form: AddActivity) -> DownMsg {
     let db = POSTGRES.read().await;
     let ids = get_ids(school_id, group_id).await.unwrap();
     if !ids.iter().any(|i| form.classes.iter().any(|c| c == i) ){
         return DownMsg::Activity(ActivityDownMsgs::AddActError("No classes".to_string()))
+    }
+    if !is_teachers_valid(school_id, &form.teachers).await{
+        return DownMsg::Activity(ActivityDownMsgs::AddActError("Not valid teachers".to_string()))
     }
     let mut groups_query = 
         sqlx::query(r#"insert into activities(subject, teachers, classes, hour) values ($1, $2, $3, $4)
@@ -175,8 +197,16 @@ pub async fn add_activity(school_id: i32, group_id: i32, form: AddActivity) -> D
         .bind(&form.hour)
         .fetch(&*db);
     if let Some(act) = groups_query.try_next().await.unwrap() {
+        let act_id = act.try_get("id").unwrap();
+        let _ = sqlx::query(r#"insert into school_acts(school_id, , group_id, act_id) values ($1, $2, $3)
+                    returning id, subject, teachers, classes, hour"#)
+
+        .bind(&school_id)
+        .bind(&group_id)
+        .bind(&act_id)
+        .execute(&*db).await;
         let act = shared::msgs::activities::FullActivity {
-            id: act.try_get("id").unwrap(),
+            id: act_id,
             subject: act.try_get("subject").unwrap(),
             hour: act.try_get("hour").unwrap(),
             classes: act.try_get("classes").unwrap(),

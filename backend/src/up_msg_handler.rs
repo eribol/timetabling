@@ -98,7 +98,8 @@ pub async fn up_msg_handler(req: UpMsgRequest<UpMsg>) {
         UpMsg::Activity(act_msg) => {
             if let Some(auth) = auth_token {
                 let manager = get_user(&auth.into_string()).await;
-                let school_msg = crate::up_msg_handler::school::get_school(manager.unwrap()).await;
+                let manager = manager.unwrap();
+                let school_msg = crate::up_msg_handler::school::get_school(manager).await;
                 if let DownMsg::GetSchool { id, .. } = school_msg {
                     match act_msg {
                         //ActivitiesUpMsgs::GetActivities(group_id) => timetables::get_activities(id, group_id).await,

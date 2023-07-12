@@ -1,4 +1,4 @@
-use super::auth::POSTGRES;
+use super::{auth::POSTGRES, teachers::get_teachers};
 use moon::tokio_stream::StreamExt;
 use shared::DownMsg;
 use sqlx::Row;
@@ -17,4 +17,11 @@ pub async fn get_school(manager: i32) -> DownMsg {
         }
     }
     DownMsg::AuthError("Not auth for school".to_string())
+}
+
+pub async fn is_teachers_valid(school_id: i32, teachers: &Vec<i32>) -> bool {
+    if let DownMsg::GetTeachers(school_teachers) = get_teachers(school_id).await{
+        return teachers.iter().all(|a| school_teachers.iter().any(|st| st.id == *a))
+    }
+    false
 }
