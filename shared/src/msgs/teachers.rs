@@ -42,6 +42,6 @@ impl Teacher{
         }
     }
     pub fn label_full(&self)-> String{
-        self.first_name.clone() + &self.last_name
+        self.first_name.clone() + " " + &self.last_name
     }
 }

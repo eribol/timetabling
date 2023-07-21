@@ -7,6 +7,7 @@ mod router;
 mod connection;
 mod elements;
 mod header;
+pub mod fonts;
 
 pub static DAYS: [&str; 7] = [
     "monday",

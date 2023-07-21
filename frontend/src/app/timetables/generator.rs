@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use shared::msgs::activities::FullActivity;
 use shared::msgs::{timetables::*, activities::Activity};
 use zoon::*;
 use zoon::named_color::BLUE_3;
 use crate::i18n::t;
 use crate::elements::{text_inputs, buttons};
 
-use super::schedules;
+use super::{schedules, prints, activities, teachers_limitations, classes_limitations};
 
 pub fn home() -> impl Element {
     Row::new()
@@ -46,7 +47,9 @@ fn right_menu()-> impl Element{
     .item(
         buttons::default_with_signal(t!("save"))
     ).item(
-        buttons::_default("Yazdır")
+        buttons::_default("Yazdır").on_click(|| prints::teachers::prints())
+    ).item(
+        buttons::_default("Yazdır-Sınıflar").on_click(|| prints::classes::prints())
     )
 }
 
@@ -94,13 +97,21 @@ fn information()-> impl Element{
 }
 
 fn buttons()-> impl Element{
-    Row::new()
-    .s(Gap::new().x(10))
+    Column::new()
+    .s(Gap::new().x(10).y(5))
+    .item(
+        buttons::_default("Sil")
+        //.label("Dağıt")
+        .s(Width::growable())
+        .s(Font::new().weight(FontWeight::Medium))
+        .on_click(|| set_data())
+    )
     .item(
         buttons::_default("Dağıt")
         //.label("Dağıt")
         .s(Width::growable())
         .on_press(|| generate() )
+        .s(Font::new().weight(FontWeight::Bold))
     )
 }
 
@@ -127,10 +138,28 @@ fn depth()->&'static Mutable<usize>{
 fn depth2()->&'static Mutable<usize>{
     Mutable::new(6)
 }
-
 #[static_ref]
-fn create_data()->&'static Mutable<TimetableData>{
+fn teachers_acts()->&'static Mutable<HashMap<i32, Vec<FullActivity>>>{
+    Mutable::new(HashMap::new())
+}
+#[static_ref]
+fn data()->&'static Mutable<TimetableData>{
     use super::*;
+    Mutable::new(create_data())
+}
+
+fn set_data(){
+    let tat = data().get_cloned().clean_tat;
+    let cat = data().get_cloned().clean_cat;
+    let dt = data().get_cloned();
+    teachers_limitations().set(*tat);
+    classes_limitations().set(*cat);
+    schedules().lock_mut().replace_cloned(vec![]);
+    //total_hour().set(0);
+    data().set(create_data());
+}
+fn create_data()->TimetableData{
+    create_acts_data();
     let tat = teachers_limitations().get_cloned();
     let cat = classes_limitations().get_cloned();
     let acts = activities().lock_mut().to_vec().into_iter().map(|a| Activity{
@@ -140,37 +169,63 @@ fn create_data()->&'static Mutable<TimetableData>{
         teachers: a.teachers,
         hour: a.hour
     }).collect::<Vec<Activity>>();
-    let data = TimetableData{
+    let dt = TimetableData{
         tat: Box::new(tat.clone()),
         cat: Box::new(cat.clone()),
         clean_cat: Box::new(cat),
         clean_tat: Box::new(tat),
         acts,
-        teachers_acts: HashMap::new(),
+        teachers_acts: teachers_acts().get_cloned(),
         neighbour_acts: create_ng(),
-        classes: vec![],//super::classes::classes().lock_mut().to_vec(),
+        classes: super::classes::classes().lock_mut().to_vec(),
         teachers: super::teachers::teachers().lock_mut().to_vec(),
         timetables: Box::new(schedules().lock_mut().to_vec())
     };
-    Mutable::new(data)
+    dt
 }
-
+fn create_acts_data(){
+    let activities = activities().lock_mut().to_vec();
+    let acts = activities.clone();
+    for act in &activities{
+        let acts: Vec<FullActivity> = acts.iter().cloned()
+            .filter(|a| act.teachers.iter().all(|t| a.teachers.iter().any(|t2| t2 == t))  &&
+                act.classes.iter().all(|c| a.classes.iter().any(|c2| c2 == c))
+                //&& act.subject == a.subject
+            )
+            .collect();
+        let mut ts_acts = teachers_acts().get_cloned();
+        ts_acts.insert(act.id, acts);
+        teachers_acts().set(ts_acts);
+        /*
+        let activities: Vec<Activity> = acts.clone().into_iter()
+            .filter(|a| a.id != act.id &&
+                (act.classes.iter().any(|c1| a.classes.iter().any(|c2| c1 == c2)) ||
+                    act.teachers.iter().any(|t| a.teachers.iter().any(|t2| t2 == t))))
+            .collect();
+        let mut na:HashMap<i32, Activity> = HashMap::new();
+        for a in &activities{
+            na.insert(a.id, a.clone());
+        }
+        model.data.neighbour_acts.insert(act.id, na);
+        */
+    }
+}
 fn generate(){
     let params = Params{
-        hour: hour().get_cloned().clone() as i32,
+        hour: hour().get() as i32,
         depth: depth().get_cloned().clone(),
         depth2: depth2().get_cloned().clone()
     };
     Task::start(async move{
         loop{
-            let mut t_data = create_data().clone().get_cloned();
+            let mut t_data = data().clone().get_cloned();
             let len = t_data.timetables.len();
             if len == total_hour().get(){
                 break;
             }
             if t_data.generate(&params){
                 schedules().lock_mut().replace_cloned(*t_data.timetables.clone());
-                create_data().set(t_data);
+                data().set(t_data);
                 
             }
             else{

@@ -26,6 +26,7 @@ pub mod generator;
 pub mod class;
 pub mod generate;
 pub mod add_act;
+pub mod prints;
 
 #[static_ref]
 pub fn school() -> &'static Mutable<Option<School>> {

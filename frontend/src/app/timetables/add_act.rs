@@ -37,8 +37,8 @@ fn filtered_Lectures()->&'static MutableVec<Lecture>{
     MutableVec::new_with_values(vec![])
 }
 #[static_ref]
-fn act_hour()->&'static Mutable<Option<i16>>{
-    Mutable::new(None)
+fn act_hour()->&'static Mutable<String>{
+    Mutable::new("".to_string())
 }
 #[static_ref]
 fn filtered_teachers()->&'static MutableVec<Teacher>{
@@ -139,10 +139,7 @@ pub fn change_add_act(){
     add_act().set_neq(!add_act().get())
 }
 fn change_hour(value: String){
-    let h = value.parse::<i16>();
-    if let Ok(h2) = h{
-        act_hour().set(Some(h2))    
-    }   
+    act_hour().set(value)   
 }
 
 fn add_act_view()->impl Element{
@@ -223,10 +220,16 @@ fn lectures_view()->impl Element{
 fn hour_view()->impl Element{
     Column::new().item(
         Label::new().label("Total Hour of Act")
-    ).item(
+    )
+    .item(
+        Label::new()
+        .s(Font::new().weight(FontWeight::ExtraLight))
+        .label("Bloklar arasına boşluk bırakın")
+    )
+    .item(
         TextInput::new()
         .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
-        .id("subject").s(Align::new().left())
+        .id("hour").s(Align::new().left())
         .on_change(change_hour)
     )
 }
@@ -244,7 +247,7 @@ fn activity_classes()-> impl Element{
     .item(
         Label::new()
         .s(Font::new().weight(FontWeight::ExtraLight))
-        .label("This is alt text")
+        .label("Dersin sınıfını veya sınıflarını seçin")
     )
     .item(
         Row::new()
@@ -317,7 +320,7 @@ fn activity_teachers()-> impl Element{
     .item(
         Label::new()
         .s(Font::new().weight(FontWeight::ExtraLight))
-        .label("This is alt text")
+        .label("Öğretmen veya öğretmenleri seç")
     )
     .item(
         Row::new()
@@ -536,16 +539,22 @@ fn close_teachers_modal(){
 }
 
 pub fn send_act(){
-    let a = AddActivity{
-        subject: selected_lecture().get_cloned().unwrap().id,
-        hour: act_hour().get().unwrap(),
-        classes: act_classes().lock_mut().to_vec().iter().map(|c| c.id).collect::<Vec<i32>>(),
-        teachers: act_teachers().lock_mut().to_vec().iter().map(|c| c.id).collect::<Vec<i32>>(),
-    };
-    
-    let a_msg = ActivityUpMsgs::AddAct((selected_timetable().get(), a));
-    let msg = UpMsg::Activity(a_msg);
-    send_msg(msg);
+    let clss = act_classes().lock_mut().to_vec().iter().map(|c| c.id).collect::<Vec<i32>>();
+    let tchrs = act_teachers().lock_mut().to_vec().iter().map(|c| c.id).collect::<Vec<i32>>();
+    let lec = selected_lecture().get_cloned().unwrap().id;
+    act_hour().get_cloned().trim_end().split(" ").for_each(|hour|{
+        if let Ok(h) = hour.parse::<i16>(){
+            let a = AddActivity{
+                subject: lec,
+                hour: h,
+                classes: clss.clone(),
+                teachers: tchrs.clone()
+            };
+            let a_msg = ActivityUpMsgs::AddAct((selected_timetable().get(), a));
+            let msg = UpMsg::Activity(a_msg);
+            send_msg(msg);    
+        }
+    });
 }
 pub fn lecture_name(act: FullActivity) -> String {
     //let mut name = "A".to_string();
@@ -572,7 +581,7 @@ pub fn teachers_full_name(act: FullActivity) -> String {
     let tec = tchrs
         .iter()
         .filter(|t1| act.teachers.iter().any(|t2| t2 == &t1.id))
-        .map(|teacher| teacher.label_full()).collect::<String>();
+        .map(|teacher| teacher.label_full()+" ").collect::<String>();
     tec
 }
 

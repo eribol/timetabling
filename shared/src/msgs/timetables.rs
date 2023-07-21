@@ -68,7 +68,7 @@ pub struct TimetableData {
     pub clean_tat: Box<HashMap<i32, Vec<TeacherLimitation>>>,
     pub clean_cat: Box<HashMap<i32, Vec<ClassLimitation>>>,
     pub acts: Vec<Activity>,
-    pub teachers_acts: HashMap<i32, HashSet<i32>>,
+    pub teachers_acts: HashMap<i32, Vec<FullActivity>>,
     pub neighbour_acts: HashMap<i32, HashMap<i32, Activity>>,
     pub classes: Vec<super::classes::Class>,
     pub teachers: Vec<crate::Teacher>,
@@ -99,7 +99,6 @@ impl TimetableData {
                 return true;
             }
             None => {
-                return false;
                 let timetables_backup = self.timetables.clone();
                 let tat_backup = self.tat.clone();
                 let cat_backup = self.cat.clone();
@@ -163,14 +162,15 @@ impl TimetableData {
                 .timetables
                 .iter()
                 .cloned()
-                .filter(|t| t.day_id == day && teacher_acts.get(&t.activity).is_some())
+                .filter(|t| t.day_id == day && teacher_acts.iter().any(|ta| ta.id == t.activity))
                 .collect();
-            if same_day_acts.is_empty() {
+            if same_day_acts.len() == 0 {
                 return true;
             }
-            if act.hour as usize + same_day_acts.len() > params.hour as usize {
+            else if (act.hour  + same_day_acts.len() as i16) > params.hour as i16 {
                 return false;
-            } else {
+            }
+            else {
                 let hours = same_day_acts
                     .iter()
                     .cloned()
