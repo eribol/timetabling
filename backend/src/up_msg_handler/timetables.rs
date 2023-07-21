@@ -198,9 +198,7 @@ pub async fn add_activity(school_id: i32, group_id: i32, form: AddActivity) -> D
         .fetch(&*db);
     if let Some(act) = groups_query.try_next().await.unwrap() {
         let act_id = act.try_get("id").unwrap();
-        let _ = sqlx::query(r#"insert into school_acts(school_id, , group_id, act_id) values ($1, $2, $3)
-                    returning id, subject, teachers, classes, hour"#)
-
+        let _ = sqlx::query(r#"insert into school_acts(school_id, group_id, act_id) values ($1, $2, $3)"#)
         .bind(&school_id)
         .bind(&group_id)
         .bind(&act_id)
