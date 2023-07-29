@@ -3,11 +3,10 @@ use std::collections::{HashMap, HashSet};
 use shared::msgs::activities::FullActivity;
 use shared::msgs::{timetables::*, activities::Activity};
 use zoon::*;
-use zoon::named_color::BLUE_3;
 use crate::i18n::t;
 use crate::elements::{text_inputs, buttons};
 
-use super::{schedules, prints, activities, teachers_limitations, classes_limitations};
+use super::{schedules, activities, teachers_limitations, classes_limitations, prints};
 
 pub fn home() -> impl Element {
     Row::new()
