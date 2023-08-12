@@ -4,7 +4,6 @@ use shared::msgs::timetables::{TimetableUpMsgs, TimetableDownMsgs};
 use sqlx::Row;
 
 use super::auth::POSTGRES;
-use super::timetables::get_ids;
 use moon::tokio_stream::StreamExt;
 
 pub async fn get_class_limitations(class_id: i32) -> DownMsg {
@@ -26,7 +25,7 @@ pub async fn get_class_limitations(class_id: i32) -> DownMsg {
 }
 
 pub async fn update_class_limitations(class_id: i32, mut form: Vec<ClassLimitation>) -> DownMsg {
-    let db = POSTGRES.write().await;
+    let db = POSTGRES.read().await;
     form.sort_by(|a,b| a.day.cmp(&b.day));
     if form.len() != 7{
         let c_msg = ClassDownMsgs::UpdateClassLimitationsError("No valid form".to_string());

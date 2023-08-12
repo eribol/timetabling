@@ -30,7 +30,7 @@ pub async fn get_user<'a, U: Deserialize<'a> + redis::FromRedisValue>(
 }
 
 pub async fn _set_user(id: i32, auth_token: &AuthToken) -> redis::RedisResult<()> {
-    let client = REDISDB.write().await;
+    let client = REDISDB.read().await;
     let mut con = client.get_connection()?;
     let _user: i32 = redis::cmd("hset")
         .arg("sessions")
@@ -41,7 +41,7 @@ pub async fn _set_user(id: i32, auth_token: &AuthToken) -> redis::RedisResult<()
 }
 
 pub async fn _del_user(id: i32, auth: String) -> redis::RedisResult<()> {
-    let client = REDISDB.write().await;
+    let client = REDISDB.read().await;
     let mut con = client.get_connection()?;
     let _user = redis::cmd("hdel")
         .arg("sessions")

@@ -13,7 +13,7 @@ pub async fn get_teachers(id: i32) -> shared::DownMsg {
         inner join school_users on user_id = id where school_users.school_id = $1"#,
     )
     .bind(&id)
-    .fetch(&*POSTGRES.write().await);
+    .fetch(&*POSTGRES.read().await);
     let mut teachers = vec![];
     while let Some(teacher) = teachers_query.try_next().await.unwrap() {
         let t = Teacher {
@@ -28,7 +28,7 @@ pub async fn get_teachers(id: i32) -> shared::DownMsg {
 }
 
 pub async fn update_teacher_limitations(school_id: i32, group_id: i32, mut form: Vec<TeacherLimitation>) -> DownMsg {
-    let db = POSTGRES.write().await;
+    let db = POSTGRES.read().await;
     form.sort_by(|a,b| a.day.cmp(&b.day));
     if form.len() != 7{
         let c_msg = TeacherDownMsgs::UpdateLimitationsError("No valid form".to_string());

@@ -7,7 +7,7 @@ use super::auth::POSTGRES;
 use moon::tokio_stream::StreamExt;
 
 pub async fn get_lectures(id: i32) -> DownMsg {
-    let db = POSTGRES.write().await;
+    let db = POSTGRES.read().await;
     let mut lectures: Vec<Lecture> = vec![];
     let mut row = sqlx::query(
         r#"select id, kademe, name, short_name from subjects
