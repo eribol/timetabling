@@ -50,6 +50,8 @@ school-counselor = Rehber Öğretmen
 teacher = Öğretmen
 
 #Günler
+days = Days
+hours = Hours
 monday = Pazartesi
 tuesday = Salı
 wednesday = Çarşamba

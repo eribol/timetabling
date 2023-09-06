@@ -50,6 +50,8 @@ school-counselor = Counselor
 teacher = Teacher
 
 #Days
+days = Days
+hours = Hours
 monday = Monday
 tuesday = Tuesday
 wednesday = Wednesday
