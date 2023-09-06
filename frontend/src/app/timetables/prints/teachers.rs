@@ -1,18 +1,17 @@
-use shared::msgs::{teachers, activities::FullActivity};
+use shared::msgs::{teachers, activities::FullActivity, schools::School};
 use web_sys::window;
 use genpdf::*;
 use zoon::paragraph;
 
-use crate::app::timetables::{selected_timetable_hour, schedules, activities, teachers::teachers, add_act::{classes_full_name, lecture_name}};
+use crate::{app::timetables::{selected_timetable_hour, schedules, activities, teachers::teachers, add_act::{classes_full_name, lecture_name}, school}, i18n};
 
 pub fn prints(){
     let fon_family = crate::fonts::font_family();
     let mut doc = genpdf::Document::new(fon_family);
     // Change the default settings
-    doc.set_title("Demo document");
+    doc.set_title(format!("{}", school().get_cloned().unwrap().name));
     // Customize the pages
     let mut decorator = genpdf::SimplePageDecorator::new();
-    println!("a3");
     decorator.set_margins(10);
     doc.set_page_decorator(decorator);
     let mut buf: Vec<u8> = Vec::new();
@@ -32,6 +31,7 @@ pub fn prints(){
 }
 
 fn print_teachers(doc: &mut genpdf::Document){
+    let name = school().get_cloned().unwrap().name;
     doc.set_minimal_conformance();
     doc.set_line_spacing(1.25);
     let mut decorator = genpdf::SimplePageDecorator::new();
@@ -48,8 +48,8 @@ fn print_teachers(doc: &mut genpdf::Document){
         title_style.set_font_size(20);
 
         let title_paragraph = elements::Paragraph::default();
-        title.push(title_paragraph.styled_string("Okul Adı", title_style).aligned(Alignment::Center));
-        let teacher_name = "A";
+        title.push(title_paragraph.styled_string(&name, title_style).aligned(Alignment::Center));
+        let teacher_name = format!("{} {}", teacher.first_name, teacher.last_name);
         let teacher_name = teacher_name.replace("\u{2068}", "");
         let teacher_name = teacher_name.replace("\u{2069}", "");
         let mut teacher_style = style::Style::new();
@@ -69,7 +69,7 @@ fn add_row(doc:&mut genpdf::Document, t: i32){
     let mut table = elements::TableLayout::new(vec![8, 8, 8, 8, 8, 8, 8, 8]);
     table.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
     let mut row = table.row();
-    row.push_element(create_row_title(format!("{} {}", "Günler", "Saatler")).aligned(Alignment::Center));
+    row.push_element(create_row_title(format!("{} {}", i18n::t_s!("days"), i18n::t_s!("hours"))).aligned(Alignment::Center));
     for day in &["p","s","ç","p","c","ct","p"]{
         row.push_element(create_row_title(format!("{}",day)).aligned(Alignment::Center));
     }
@@ -87,7 +87,7 @@ fn add_row(doc:&mut genpdf::Document, t: i32){
         let mut line_style = style::Style::new();
         line_style.bold();
         line_style.set_font_size(8);
-        let par = elements::Paragraph::default().styled_string("00:00-00:00", line_style).aligned(Alignment::Center);
+        let par = elements::Paragraph::default().styled_string("", line_style).aligned(Alignment::Center);
         hour_row.push(par);
         row.push_element(hour_row);
         for day in ["p","s","ç","p","c","ct","p"].iter().enumerate(){
