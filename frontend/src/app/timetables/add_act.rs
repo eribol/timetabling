@@ -88,7 +88,7 @@ fn filter_lectures(value: String){
     else{
         lecture_modal().set(true);
         let lects = lectures().lock_mut().to_vec();
-        let f_lects = lects.into_iter().filter(|lec| lec.name.contains(&value)).collect::<Vec<Lecture>>();
+        let f_lects = lects.into_iter().filter(|lec| lec.name.to_uppercase().contains(&value.to_uppercase())).collect::<Vec<Lecture>>();
         filtered_Lectures().lock_mut().replace_cloned(f_lects)
     }
     
@@ -105,7 +105,7 @@ fn filter_classes(value: String){
             //.to_vec()
             .iter()
             .filter(|class| 
-                class.label().contains(&value)
+                class.label().to_uppercase().contains(&value.to_uppercase())
             ).map(|c| c.clone()).collect()
         )
     }
@@ -125,7 +125,7 @@ fn filter_teachers(value: String){
             .into_iter()
             .filter(|teacher|{
                 let a_teachers = act_teachers().lock_mut().to_vec();
-                teacher.first_name.contains(&value) && a_teachers.iter().all(|t2| t2.id != teacher.id)    
+                teacher.label_full().to_uppercase().contains(&value.to_uppercase()) && a_teachers.iter().all(|t2| t2.id != teacher.id)    
             }
             ).collect()
         )
