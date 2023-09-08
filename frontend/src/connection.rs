@@ -32,14 +32,16 @@ pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
             app::timetables::teachers::get_teachers();
             get_lectures();
         }
-        DownMsg::GetLectures(lectures) => {
+        DownMsg::GetLectures(mut lectures) => {
+            lectures.sort_by(|a,b| a.short_name.cmp(&b.short_name));
             crate::app::timetables::lectures()
             .lock_mut()
             .replace_cloned(lectures);
         },
         DownMsg::Timetable(msg) => {
             match msg {
-                TimetableDownMsgs::GetClasses(classes)=>{ 
+                TimetableDownMsgs::GetClasses(mut classes)=>{
+                    classes.sort_by(|a, b| a.label().cmp(&b.label())); 
                     classes::classes().lock_mut().replace_cloned(classes);
                 },
                 TimetableDownMsgs::GetClassesLimitations(lims)=>{
@@ -110,7 +112,8 @@ pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
                 get_activities();
             }
         }
-        DownMsg::GetTeachers(tchrs)=>{
+        DownMsg::GetTeachers(mut tchrs)=>{
+            tchrs.sort_by(|a, b| a.label_full().cmp(&b.label_full()));
             teachers().lock_mut().replace_cloned(tchrs);
         }
         _ => (),        
