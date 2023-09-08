@@ -10,6 +10,8 @@ delete = Sil
 edit = Düzenle
 save = Kaydet
 save-changes = Değişiklikleri Kaydet
+hide = Gizle
+show = Göster
 
 #Home page
 libredu-information = Libredu okullar için bir yazılım kümesidir, ders dağıtımı ve yıllık plan oluşturma gibi.
@@ -48,6 +50,18 @@ vice-principal = Müdür Başyardımcısı
 deputy-principal = Müdür Yardımcısı
 school-counselor = Rehber Öğretmen
 teacher = Öğretmen
+
+#Activity Add
+lecture = Ders
+lecture-name = Ders Adı
+select-lecture = Ders Seçin
+act-hour = Aktivite Saati
+activity-classes = Aktivite Sınıfları
+activity-teachers = Aktivite Öğretmenleri
+select-act-classes = Aktivite için sınıf(lar)ı seçin
+select-act-teachers = Aktivite için öğretmen(ler)i seçin
+total-act-hours = Toplam ders yükü = 
+use-space-for-blocks = Bloklar için boşluk kullanın
 
 #Günler
 days = Days

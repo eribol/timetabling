@@ -10,6 +10,8 @@ delete = Delete
 edit = Edit
 save = Save
 save-changes = Save Changes
+hide = Hide
+show = Show
 
 #Home Page
 libredu-information = Libredu is a collection softwares for schools like timetabling, creating curriculum.
@@ -48,6 +50,18 @@ vice-principal = Vice Principle
 deputy-principal = Deputy Vice Principle
 school-counselor = Counselor
 teacher = Teacher
+
+#Activity Add
+lecture = Lecture
+lecture-name = Lecture Name
+select-lecture = Select Lecture
+act-hour = Activity Hour
+activity-classes = Activity Classes
+activity-teachers = Activity Teacher
+select-act-classes = Select class/classes for activity
+select-act-teachers = Select teacher/teachers for activity
+total-act-hours = Total Act Hours = 
+use-space-for-blocks = Use space for blocks
 
 #Days
 days = Days

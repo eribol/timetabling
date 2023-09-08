@@ -1,12 +1,8 @@
-use std::default;
-use shared::UpMsg;
 use zoon::{named_color::*,*};
-use shared::msgs::activities::{FullActivity, AddActivity, ActivityUpMsgs};
-use crate::app::timetables::classes::classes;
-use crate::app::timetables::{lectures, selected_timetable, activities, schedules};
+use shared::msgs::activities::FullActivity;
+use crate::app::timetables::{activities, schedules};
 
-use crate::elements::{*, self};
-use crate::i18n::t;
+use crate::i18n::t_s;
 use super::super::timetables::add_act::*;
 
 pub fn activities_view(id: i32)->impl Element{
@@ -16,6 +12,11 @@ pub fn activities_view(id: i32)->impl Element{
         .s(Width::fill())
         .item(    
             home()
+        )
+        .item(
+            Button::new()
+            .label_signal(add_act().signal().map_bool(|| t_s!("hide"), || t_s!("show")))
+            .on_click(change_add_act)
         )
         .s(Padding::new().left(20))
         .item(

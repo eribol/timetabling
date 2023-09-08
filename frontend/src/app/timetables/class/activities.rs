@@ -1,39 +1,24 @@
 use zoon::{named_color::*,*};
 use shared::msgs::activities::FullActivity;
-use crate::app::timetables::add_act::{home, send_act, teachers_full_name, add_act, change_add_act, ActCol, lecture_name, teacher_short_name, del_act, classes_full_name};
+use crate::app::timetables::add_act::{home, teachers_full_name, add_act, change_add_act, ActCol, lecture_name, teacher_short_name, del_act};
 use crate::app::timetables::{activities, schedules};
-use crate::elements::*;
-use crate::i18n::t;
+use crate::i18n::t_s;
 
 pub fn activities_view(id: i32)->impl Element{
     Column::new()
-        //.s(Align::new().right())
-        .s(Align::new().top())
-        .s(Width::fill())
-        .item_signal(
-            add_act().signal().map_true(||
-                home()
-            )
-        )
-        .item_signal(
-            add_act().signal().map(|s|{
-                if !s{
-                    buttons::default_with_signal(t!("add"))
-                    .s(Height::exact(25))
-                    .on_click(change_add_act).s(Align::center()).s(Width::exact(100))
-                }
-                else{
-                    buttons::default_with_signal(t!("add"))
-                    .s(Height::exact(25))
-                    .on_click(||{
-                        send_act();
-                        change_add_act();
-                    }).s(Align::center()).s(Width::exact(100))
-                }
-            })
-        )
-        .s(Padding::new().left(20))
-        .item(
+    .s(Align::new().top())
+    .s(Width::fill())
+    .item_signal(
+        add_act().signal().map_true(||
+            home()
+    ))
+    .item(
+        Button::new()
+        .label_signal(add_act().signal().map_bool(|| t_s!("hide"), || t_s!("show")))
+        .on_click(change_add_act)
+    )
+    .s(Padding::new().left(20))
+    .item(
             Row::new()
             .multiline()
             .s(Gap::new().x(2).y(2))

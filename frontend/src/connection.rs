@@ -61,8 +61,6 @@ pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
                 TimetableDownMsgs::Class(c_msg) => {
                     match c_msg{
                         ClassDownMsgs::UpdateClassLimitations(lims)=>{
-                            use crate::println;
-                            println!("class lims");
                             let id = cls_id().get();
                             classes_limitations().lock_mut().insert(id, lims);
                         }

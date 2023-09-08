@@ -2,6 +2,7 @@ use shared::msgs::activities::FullActivity;
 use zoon::{eprintln, *};
 use zoon::named_color::*;
 use crate::app::timetables::add_act::{teacher_short_name, lecture_name, teachers_full_name};
+use crate::app::timetables::classes::classes;
 use crate::app::timetables::{schedules, activities};
 use crate::connection::*;
 use crate::i18n::t;
@@ -20,8 +21,13 @@ pub fn class_limitations() -> &'static MutableVec<ClassLimitation> {
 pub fn create_class_lims(){
     let class_lim = super::super::classes_limitations().lock_mut();
     let id = cls_id().get();
-    let lim = class_lim.get(&id).unwrap();
-    class_limitations().lock_mut().replace_cloned(lim.clone())
+    let lim = class_lim.get(&id);
+    loop{
+        if let Some(lim) = lim{
+            class_limitations().lock_mut().replace_cloned(lim.clone());
+            break; 
+        }
+    }
 }
 
 #[static_ref]
@@ -32,37 +38,36 @@ pub fn loaded_lims()->&'static Mutable<bool>{
 pub fn schedule_table() -> impl Element {
     Column::new()
     .item(
-            Row::new()
-                .s(Align::new().left())
-                //.s(Padding::new().top(10))
-                .item(hours_column_view())
-                .items(
-                    crate::DAYS
-                    .iter()
-                    .enumerate()
-                    .map(|day| El::new()
-                        .child_signal(loaded_lims().signal().map_true(move || lim_col_view(day.0+1)))
-                    )
-                )
+        Row::new()
+        .s(Align::new().left())
+        .item(hours_column_view())
+        .items(
+            crate::DAYS
+            .iter()
+            .enumerate()
+            .map(|day| El::new()
+                .child_signal(loaded_lims().signal().map_true(move || lim_col_view(day.0+1)))
+            )
         )
-        .item(
-            alt_buttons()
-        )
+    )
+    .item(
+        alt_buttons()
+    )
 }
 fn hours_column_view()-> impl Element{
     Column::new()
-        .s(Align::new().top())
-        .item(Button::new()
-            .s(Height::exact(LIM_HEIGHT))
-            .s(Width::exact(LIM_WIDTH))
-            .label("Günler/Saatler")
-            .s(Borders::all(Border::new().width(1).solid().color(BLUE_3))),
-        )
+    .s(Align::new().top())
+    .item(Button::new()
+        .s(Height::exact(LIM_HEIGHT))
+        .s(Width::exact(LIM_WIDTH))
+        .label("Günler/Saatler")
+        .s(Borders::all(Border::new().width(1).solid().color(BLUE_3))),
+    )
         .items_signal_vec(super::super::selected_timetable_hour()
             .signal_vec_cloned()
             .enumerate()
             .map(|hour| {Button::new()
-                .label(hour.0.get().unwrap_throw() as i32)
+                .label(hour.0.get().unwrap_throw() as i32 + 1)
                 .s(Height::exact(LIM_HEIGHT))
                 .s(Width::exact(LIM_WIDTH))
                 .s(Borders::new()
@@ -223,6 +228,7 @@ fn hour_view(h: bool, day: ClassLimitation, hour: usize)->impl Element{
 
 fn alt_buttons()->impl Element{
     Row::new()
+    .s(Align::center())
     .s(Padding::new().top(15))
     .s(Gap::new().x(10))
     .item(buttons::default_with_signal(t!("save-changes"))
@@ -273,9 +279,12 @@ pub fn save_schedules(){
 }
 
 pub fn add_lim_classes(){
-    let g_id = super::super::selected_timetable().get();
-    let form = class_limitations().lock_mut().to_vec();
-    let c_msg = ClassUpMsgs::UpdateLimitations((g_id, form.clone()));
-    let t_msg = TimetableUpMsgs::Class(c_msg);
-    send_msg(shared::UpMsg::Timetable(t_msg));
+    let clss = classes().lock_mut().to_vec();
+    let mut form = class_limitations().lock_mut().to_vec();
+    for c in clss{
+        form.iter_mut().for_each(|f| f.class_id = c.id);
+        let c_msg = ClassUpMsgs::UpdateLimitations((c.id, form.clone()));
+        let t_msg = TimetableUpMsgs::Class(c_msg);
+        send_msg(shared::UpMsg::Timetable(t_msg));
+    }
 }

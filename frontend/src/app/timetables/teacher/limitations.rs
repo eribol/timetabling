@@ -5,7 +5,6 @@ use shared::msgs::timetables::TimetableUpMsgs;
 use zoon::*;
 use zoon::named_color::*;
 use crate::app::timetables::add_act::{lecture_name, classes_full_name};
-use crate::app::timetables::class::activities::is_placed;
 use crate::app::timetables::class::limitations::{LIM_HEIGHT, LIM_WIDTH};
 use crate::app::timetables::teachers::selected_teacher;
 use crate::app::timetables::{selected_timetable_hour, teachers_limitations, create_default_lim, selected_timetable, schedules, activities};
@@ -27,15 +26,13 @@ pub fn get_t_l(){
     if let Some(id) = selected_teacher().get(){
         let lim = teachers_limitations().get_cloned();
         let lim = lim.get(&id);
-        if let Some(lims) = lim{
-            teacher_limitations().lock_mut().replace_cloned(lims.clone())
-        }
-        else{
-            let _l = create_default_lim(id);
-            //teacher_limitations().lock_mut().replace_cloned(l)
+        loop{
+            if let Some(lims) = lim{
+                teacher_limitations().lock_mut().replace_cloned(lims.clone());
+                break;
+            }
         }
     }
-    
 }
 #[static_ref]
 pub fn loaded_lims()->&'static Mutable<bool>{

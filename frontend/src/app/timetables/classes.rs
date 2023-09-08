@@ -29,45 +29,45 @@ fn classes_view() -> impl Element {
         .s(Width::exact(75))
         .s(Height::exact(50))
         .on_hovered_change(move |b| a.set(b))
-            .item(
-                Label::new()
-                .s(Cursor::new(CursorIcon::Pointer))
-                .s(Align::new().center_x().center_y())
-                    .s(
-                                Font::new()
-                                .weight_signal(
-                                    cls_id().signal_ref(move |id|{
-                                        if id == &row.id{
-                                            FontWeight::Bold
-                                        }
-                                        else{
-                                            FontWeight::Light
-                                        }
-                                    })
-                                    //.map_bool(|| , || FontWeight::Medium)
-                                )
-                                .color_signal(
-                                    cls_id().signal_ref(move |id|{
-                                        if id == &row.id{
-                                            RED_7
-                                        }
-                                        else{
-                                            BLUE_5
-                                        }
-                                    })
-                                )
-                            )
-                            .label(format!("{}{}", row.kademe, row.sube))
+        .item(
+            Label::new()
+            .s(Cursor::new(CursorIcon::Pointer))
+            .s(Align::new().center_x().center_y())
+                .s(
+                    Font::new()
+                    .weight_signal(
+                        cls_id().signal_ref(move |id|{
+                            if id == &row.id{
+                                FontWeight::Bold
+                            }
+                            else{
+                                FontWeight::Light
+                            }
+                        })
                     )
-                    .on_click(move || {
-                        cls_id().set(row.id);
-                        create_class_lims();
-                        let clss = classes().lock_mut().to_vec();
-                        let cls = clss.iter().find(|c| c.id == row.id).unwrap();
-                        selected_class().set(Some(cls.clone()));
-                        add_act::change_act_classes();
-                    })
-            }))
+                    .color_signal(
+                        cls_id().signal_ref(move |id|{
+                            if id == &row.id{
+                                RED_7
+                            }
+                            else{
+                                BLUE_5
+                            }
+                        })
+                    )
+                )
+                .label(format!("{}{}", row.kademe, row.sube))
+            )
+            .on_click(move || {
+                cls_id().set(row.id);
+                create_class_lims();
+                let clss = classes().lock_mut().to_vec();
+                let cls = clss.iter().find(|c| c.id == row.id).unwrap();
+                selected_class().set(Some(cls.clone()));
+                add_act::change_act_classes();
+            })
+        })
+    )
 }
 
 #[static_ref]

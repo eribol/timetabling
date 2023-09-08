@@ -8,6 +8,7 @@ use zoon::{named_color::*, *};
 use crate::i18n::t;
 use crate::connection::send_msg;
 use crate::elements::buttons;
+use super::{activities, schedules};
 use super::class::selected_class;
 use super::{lectures, classes, selected_timetable, teachers::{teachers, selected_teacher}};
 
@@ -33,7 +34,7 @@ fn selected_lecture()->&'static Mutable<Option<Lecture>>{
     Mutable::new(None)
 }
 #[static_ref]
-fn filtered_Lectures()->&'static MutableVec<Lecture>{
+fn filtered_lectures()->&'static MutableVec<Lecture>{
     MutableVec::new_with_values(vec![])
 }
 #[static_ref]
@@ -89,7 +90,7 @@ fn filter_lectures(value: String){
         lecture_modal().set(true);
         let lects = lectures().lock_mut().to_vec();
         let f_lects = lects.into_iter().filter(|lec| lec.name.to_uppercase().contains(&value.to_uppercase())).collect::<Vec<Lecture>>();
-        filtered_Lectures().lock_mut().replace_cloned(f_lects)
+        filtered_lectures().lock_mut().replace_cloned(f_lects)
     }
     
 }
@@ -153,35 +154,52 @@ fn add_act_view()->impl Element{
 }
 
 pub fn home()->impl Element{
+    let mut id = 0;
+    if let Some(i) = selected_class().get_cloned(){
+        id = i.id;
+    }
+    else{
+        if let Some(i) = selected_teacher().get_cloned(){
+            id = i;
+        }
+    }
     Column::new()
     .item_signal(
         add_act().signal().map_true(add_act_view)
-    ).item(alt_buttons())
+    )
+    .item({
+        Row::new()
+        .item_signal(t!("total-act-hours"))
+        .item_signal(activities()
+            .signal_vec_cloned()
+            .filter_signal_cloned(move |acts| 
+                Mutable::new(
+                    acts.classes.iter()
+                    .any(|c| c == &id) && !schedules().lock_ref().iter().any(|s| s.activity == acts.id)
+                )
+                .signal()
+            ).len()
+        )
+    })
+    .item(alt_buttons())
 }
 
 fn alt_buttons()->impl Element{
-    Row::new()
+    Column::new()
     .s(Align::center())
+    .s(Width::fill())
     .item(
         buttons::default_with_signal(t!("add"))
-        .s(Height::exact(25))
-        //
-        //.s(Width::exact(100))
         .on_click(send_act)
-    )
-    .item(
-        Button::new()
-        .label_signal(add_act().signal().map_bool(|| "Göster", || "Gizle"))
-        .on_click(change_add_act)
     )
 }
 
 fn lectures_view()->impl Element{
     Column::new()
     .item(
-        Label::new().label("Lecture")
+        Label::new().label_signal(t!("lecture"))
     ).item(
-        Label::new().s(Font::new().weight(FontWeight::ExtraLight)).label("Select a lecture")
+        Label::new().s(Font::new().weight(FontWeight::ExtraLight)).label_signal(t!("select-lecture"))
     )
     .item_signal(
         selected_lecture().signal_ref(|lec|
@@ -219,12 +237,12 @@ fn lectures_view()->impl Element{
 }
 fn hour_view()->impl Element{
     Column::new().item(
-        Label::new().label("Total Hour of Act")
+        Label::new().label_signal(t!("act-hour"))
     )
     .item(
         Label::new()
         .s(Font::new().weight(FontWeight::ExtraLight))
-        .label("Bloklar arasına boşluk bırakın")
+        .label_signal(t!("use-space-for-blocks"))
     )
     .item(
         TextInput::new()
@@ -242,12 +260,12 @@ fn activity_classes()-> impl Element{
     .s(RoundedCorners::new().bottom(2).top(2))
     .on_hovered_change(move |hovered| a.set_neq(hovered))
     .item(
-        Label::new().label("Activity Classes")
+        Label::new().label_signal(t!("activity-classes"))
     )
     .item(
         Label::new()
         .s(Font::new().weight(FontWeight::ExtraLight))
-        .label("Dersin sınıfını veya sınıflarını seçin")
+        .label_signal(t!("select-act-classes"))
     )
     .item(
         Row::new()
@@ -315,12 +333,12 @@ fn activity_teachers()-> impl Element{
     .s(RoundedCorners::new().bottom(2).top(2))
     .on_hovered_change(move |hovered| a.set_neq(hovered))
     .item(
-        Label::new().label("Activity Teachers")
+        Label::new().label_signal(t!("activity-teachers"))
     )
     .item(
         Label::new()
         .s(Font::new().weight(FontWeight::ExtraLight))
-        .label("Öğretmen veya öğretmenleri seç")
+        .label_signal(t!("select-act-teachers"))
     )
     .item(
         Row::new()
@@ -397,7 +415,7 @@ pub fn lectures_modal_view(id: &str) -> impl zoon::Element {
         .on_click_outside_with_ids(close_lectures_modal, [id])
         //.after_remove(|_| crate::header::close_menu())
         .items_signal_vec(
-            filtered_Lectures().signal_vec_cloned()
+            filtered_lectures().signal_vec_cloned()
             .map(|lecture|{
                 Button::new()
                 .label(

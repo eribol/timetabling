@@ -7,6 +7,7 @@ pub fn home(id: i32) -> impl zoon::Element {
     zoon::Column::new()
     .s(Padding::new().top(20))
     .item(Row::new()
+        .s(Padding::new().left(20).right(20))
         .item(limitations::schedule_table())
         .item(activities::activities_view(id))
         .s(Gap::new().x(10))

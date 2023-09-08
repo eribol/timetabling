@@ -79,7 +79,9 @@ fn information()-> impl Element{
             Label::new().label("Toplam ders sayısı: ")
         )
         .item(
-            Label::new().label(total_hour().get().to_string())
+            Label::new().label_signal(
+                total_hour().signal()
+            )
         )
     )
     .item(
@@ -150,7 +152,6 @@ fn data()->&'static Mutable<TimetableData>{
 fn set_data(){
     let tat = data().get_cloned().clean_tat;
     let cat = data().get_cloned().clean_cat;
-    let dt = data().get_cloned();
     teachers_limitations().set(*tat);
     classes_limitations().set(*cat);
     schedules().lock_mut().replace_cloned(vec![]);
@@ -231,7 +232,7 @@ fn generate(){
                 break
             }
             
-            Timer::sleep(100).await;
+            Timer::sleep(5).await;
             
         }
     })
