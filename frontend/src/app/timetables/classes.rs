@@ -59,12 +59,29 @@ fn classes_view() -> impl Element {
                 .label(format!("{}{}", row.kademe, row.sube))
             )
             .on_click(move || {
-                cls_id().set(row.id);
-                create_class_lims();
-                let clss = classes().lock_mut().to_vec();
-                let cls = clss.iter().find(|c| c.id == row.id).unwrap();
-                selected_class().set(Some(cls.clone()));
-                add_act::change_act_classes();
+                let class = selected_class().get_cloned();
+                match class{
+                    Some(c) =>{
+                        if c.id != row.id{
+                            let clss = classes().lock_mut().to_vec();
+                            let cls = clss.iter().find(|c| c.id == row.id).unwrap();
+                            selected_class().set(Some(cls.clone()));
+                            add_act::change_act_classes();
+                            create_class_lims();
+                        }
+                        else{
+                            selected_class().set(None)
+                        }
+                    }
+                    None => {
+                        let clss = classes().lock_mut().to_vec();
+                        let cls = clss.iter().find(|c| c.id == row.id).unwrap();
+                        add_act::change_act_classes();
+                        selected_class().set(Some(cls.clone()));
+                        create_class_lims();
+                    }
+                }
+                
             })
         })
     )

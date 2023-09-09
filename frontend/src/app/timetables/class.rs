@@ -1,5 +1,7 @@
 use shared::msgs::classes::Class;
 use zoon::*;
+
+use self::limitations::loaded_lims;
 pub mod activities;
 pub mod limitations;
 
@@ -8,7 +10,9 @@ pub fn home(id: i32) -> impl zoon::Element {
     .s(Padding::new().top(20))
     .item(Row::new()
         .s(Padding::new().left(20).right(20))
-        .item(limitations::schedule_table())
+        .item_signal(loaded_lims().signal().map_true(||
+            limitations::schedule_table()
+        ))
         .item(activities::activities_view(id))
         .s(Gap::new().x(10))
     )

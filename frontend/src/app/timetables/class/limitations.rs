@@ -1,7 +1,7 @@
 use shared::msgs::activities::FullActivity;
 use zoon::{eprintln, *};
 use zoon::named_color::*;
-use crate::app::timetables::add_act::{teacher_short_name, lecture_name, teachers_full_name};
+use crate::app::timetables::add_act::{lecture_name, teachers_full_name};
 use crate::app::timetables::classes::classes;
 use crate::app::timetables::{schedules, activities};
 use crate::connection::*;
@@ -20,13 +20,10 @@ pub fn class_limitations() -> &'static MutableVec<ClassLimitation> {
 }
 pub fn create_class_lims(){
     let class_lim = super::super::classes_limitations().lock_mut();
-    let id = cls_id().get();
+    let id = selected_class().get_cloned().unwrap().id;
     let lim = class_lim.get(&id);
-    loop{
-        if let Some(lim) = lim{
-            class_limitations().lock_mut().replace_cloned(lim.clone());
-            break; 
-        }
+    if let Some(lim) = lim{
+        class_limitations().lock_mut().replace_cloned(lim.clone()); 
     }
 }
 
@@ -63,7 +60,7 @@ fn hours_column_view()-> impl Element{
         .label("Günler/Saatler")
         .s(Borders::all(Border::new().width(1).solid().color(BLUE_3))),
     )
-        .items_signal_vec(super::super::selected_timetable_hour()
+    .items_signal_vec(super::super::selected_timetable_hour()
             .signal_vec_cloned()
             .enumerate()
             .map(|hour| {Button::new()
@@ -79,7 +76,7 @@ fn hours_column_view()-> impl Element{
 }
 fn lim_col_view(day: usize)-> impl Element{
     Column::new()
-        .s(Align::new().top())
+    .s(Align::new().top())
         .item(Button::new()
             //.s(Align::new())
             .s(Height::exact(LIM_HEIGHT))        

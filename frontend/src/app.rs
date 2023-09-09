@@ -9,10 +9,9 @@ pub static LANG_STORAGE_KEY: &str = "tr";
 
 pub fn root() -> impl Element {
     Column::new()
-        .s(Padding::new().top(15))
-        
-        .item(view::root())
-        .on_viewport_size_change(|width, _height| change_screen_width(width))
+    .s(Padding::new().top(15))    
+    .item(view::root())
+    .on_viewport_size_change(|width, _height| change_screen_width(width))
 }
 
 #[derive(Debug, Clone, Default)]

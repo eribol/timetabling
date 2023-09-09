@@ -100,7 +100,11 @@ pub fn change_timetable(value: String) {
     };
     selected_timetable().set(id);
     change_page(TimetablePages::Classes);
-    self::classes::get_classes();
+    self::classes::get_classes();    
+    get_classes_limitations();
+    get_teachers_limitations();
+    get_schedules();
+    get_activities();
 }
 
 fn change_page(p: TimetablePages) {

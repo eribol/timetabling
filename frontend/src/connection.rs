@@ -46,7 +46,7 @@ pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
                 },
                 TimetableDownMsgs::GetClassesLimitations(lims)=>{
                     create_classes_limitations(lims);
-                    class::limitations::loaded_lims().set(true)
+                    class::limitations::loaded_lims().set(true);
                 },
                 TimetableDownMsgs::GetActivities(acts)=>{
                     timetables::activities().lock_mut().replace_cloned(acts);
