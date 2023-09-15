@@ -36,24 +36,25 @@ fn classes_view() -> impl Element {
                 .s(
                     Font::new()
                     .weight_signal(
-                        cls_id().signal_ref(move |id|{
-                            if id == &row.id{
+                        selected_class().signal_cloned()
+                        .map_option(move|class|{
+                            if class.id == row.id{
                                 FontWeight::Bold
                             }
                             else{
                                 FontWeight::Light
                             }
-                        })
+                        }, ||FontWeight::Light)   
                     )
                     .color_signal(
-                        cls_id().signal_ref(move |id|{
-                            if id == &row.id{
+                        selected_class().signal_cloned().map_option(move |class|{
+                            if class.id == row.id{
                                 RED_7
                             }
                             else{
                                 BLUE_5
                             }
-                        })
+                        }, || BLUE_5)
                     )
                 )
                 .label(format!("{}{}", row.kademe, row.sube))
@@ -76,8 +77,8 @@ fn classes_view() -> impl Element {
                     None => {
                         let clss = classes().lock_mut().to_vec();
                         let cls = clss.iter().find(|c| c.id == row.id).unwrap();
-                        add_act::change_act_classes();
                         selected_class().set(Some(cls.clone()));
+                        add_act::change_act_classes();
                         create_class_lims();
                     }
                 }

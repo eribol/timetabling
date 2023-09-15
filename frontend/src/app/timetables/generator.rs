@@ -7,6 +7,7 @@ use shared::msgs::classes::{ClassLimitation, Class};
 use shared::msgs::teachers::{TeacherLimitation, Teacher};
 use shared::msgs::{timetables::*, activities::Activity};
 use zoon::*;
+use zoon::named_color::{BLUE_3, BLUE_1};
 use crate::i18n::t;
 use crate::elements::{text_inputs, buttons};
 
@@ -103,6 +104,7 @@ fn information()-> impl Element{
 }
 
 fn buttons()-> impl Element{
+    let (a, _b) = Mutable::new_and_signal_cloned(false);
     Column::new()
     .s(Gap::new().x(10).y(5))
     .item(
@@ -114,7 +116,20 @@ fn buttons()-> impl Element{
     )
     .item(
         Button::new()
-        .label_signal(is_generate().signal().map_bool(|| Label::new().label_signal(t!("generate")), || Label::new().label_signal(t!("stop"))))
+        .s(Borders::all_signal(a.signal().map_bool(
+            || Border::new().width(1).color(BLUE_3).solid(),
+            || Border::new().width(1).color(BLUE_1).solid(),
+        )))
+        .s(Height::exact(50))
+        .s(RoundedCorners::all(2))
+        .label_signal(
+            is_generate()
+            .signal()
+            .map_bool(|| 
+                Label::new()
+                .s(Align::center())
+                .label_signal(t!("generate")), 
+                || Label::new().s(Align::center()).label_signal(t!("stop"))))
         .s(Width::growable())
         .on_press(||{
             generate();
@@ -501,7 +516,6 @@ impl TimetableData {
                 }
             }
         }
-        
         self.timetables.retain(|t| t.activity != act.id);
     }
     fn find_conflict_activity(
@@ -557,17 +571,11 @@ impl TimetableData {
         }
         //log!("elapsed2 = ", now.elapsed().as_millis());
         total_act.shuffle(&mut thread_rng());
-        //total_act.sort_by(|a,b| a.len().cmp(&b.len()));
-        total_act.sort_by(|a, b| {
-            a.iter()
-                .fold(0, |acc, act| acc + act.hour)
-                .cmp(&b.iter().fold(0, |acc, act| acc + act.hour))
-        });
+        
         for item in &mut total_act {
             item.sort_by_key(|a| a.id);
             item.dedup();
         }
-        //log!("elapsed3 = ", depth);
         if total_act.len() >= params.depth {
             return total_act[..params.depth].to_vec();
         }

@@ -5,8 +5,8 @@ use shared::{
 };
 use zoon::{named_color::*, *};
 
-use super::{teacher::{self, limitations::get_t_l}, add_act::teacher_short_name};
-
+use super::teacher::{self, limitations::get_t_l};
+use crate::i18n::t;
 #[static_ref]
 fn show_teachers()->&'static Mutable<bool>{
     Mutable::new(true)
@@ -18,22 +18,12 @@ pub fn selected_teacher()->&'static Mutable<Option<i32>>{
 }
 pub fn home() -> impl Element {
     Column::new()
-    .item(teachers_view())
+    .item_signal(show_teachers().signal().map_true(||teachers_view()))
     .item(
         show_button()
     ).item_signal(selected_teacher().signal().map_some(|id|{
         teacher::home(id)
     }))
-}
-
-fn show_button()->impl Element{
-    Button::new().label_signal(
-        show_teachers().signal().map_bool(||"Gizle", || "Tümünü Göster")
-    )
-    .on_click(||{
-        let s = show_teachers().get();
-        show_teachers().set(!s);            
-    })
 }
 
 fn teachers_view()-> impl Element{
@@ -76,7 +66,6 @@ fn teachers_view()-> impl Element{
             .label(format!("{}", teacher_name(row.clone())))
         )
         .on_click(move ||{
-            show_teachers().set(false);
             selected_teacher().set(Some(row.id));
             get_t_l();
             super::add_act::change_act_teachers();
@@ -85,6 +74,15 @@ fn teachers_view()-> impl Element{
             raw_el.attr("title", &format!("{} {}", row.first_name, row.last_name))
         })        
     }))
+}
+fn show_button()->impl Element{
+    Button::new().label_signal(
+        show_teachers().signal().map_bool(||Label::new().label_signal(t!("hide")), || Label::new().label_signal(t!("show")))
+    )
+    .on_click(||{
+        let s = show_teachers().get();
+        show_teachers().set(!s);            
+    })
 }
 
 #[static_ref]

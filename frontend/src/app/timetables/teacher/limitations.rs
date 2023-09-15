@@ -73,7 +73,7 @@ fn hours_column_view()-> impl Element{
                 let h = hour.0.get().unwrap_throw();
                 Button::new()
                 .on_click(move|| all_hours(h))
-                .label(h)
+                .label(h+1)
                 .s(Height::exact(LIM_HEIGHT))
                 .s(Width::exact(LIM_WIDTH))
                 .s(Borders::new()
@@ -145,7 +145,6 @@ fn placed(act: &FullActivity, hour: usize, day: usize){
 }
 
 fn hour_view(h: bool, day: TeacherLimitation, hour: usize)->impl Element{
-    let d_clone = day.clone();
     //let d_id = d_clone.day;
     let s: Mutable<bool> = Mutable::new(h);
     Column::new()

@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use shared::msgs::activities::FullActivity;
 use zoon::{eprintln, *};
 use zoon::named_color::*;
@@ -63,14 +65,17 @@ fn hours_column_view()-> impl Element{
     .items_signal_vec(super::super::selected_timetable_hour()
             .signal_vec_cloned()
             .enumerate()
-            .map(|hour| {Button::new()
-                .label(hour.0.get().unwrap_throw() as i32 + 1)
+            .map(|hour| {
+                let h = hour.0.get().unwrap_throw();
+                Button::new()
+                .label(h+1)
                 .s(Height::exact(LIM_HEIGHT))
                 .s(Width::exact(LIM_WIDTH))
                 .s(Borders::new()
                     .bottom(Border::new().width(1).solid().color(BLUE_3))
                     .left(Border::new().width(1).solid().color(BLUE_3))
-                    .right(Border::new().width(1).solid().color(BLUE_3)))
+                    .right(Border::new().width(1).solid().color(BLUE_3))
+                ).on_click(move||all_hours(h))
             }),
         )
 }
@@ -258,7 +263,17 @@ fn change_day_lim(day_index: usize){
             hours.iter_mut().for_each(|h| *h=false);
         }
     }
-    class_limitations().lock_mut().set_cloned(day_index-1, ClassLimitation { class_id: super::cls_id().get(), day: day_index as i32, hours});
+    class_limitations().lock_mut().set_cloned(day_index-1, ClassLimitation { class_id: super::selected_class().get_cloned().unwrap().id, day: day_index as i32, hours});
+}
+fn all_hours(hour: usize){
+    let mut lims = class_limitations().lock_mut().to_vec();
+    if !lims.iter().all(|day| day.hours[hour]){
+        lims.iter_mut().for_each(|day| day.hours[hour] = true);
+    }
+    else{
+        lims.iter_mut().for_each(|day| day.hours[hour] = false);
+    }
+    class_limitations().lock_mut().replace_cloned(lims);
 }
 
 pub fn add_lim(){
