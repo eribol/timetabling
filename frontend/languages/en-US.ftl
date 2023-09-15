@@ -12,6 +12,8 @@ save = Save
 save-changes = Save Changes
 hide = Hide
 show = Show
+stop = Stop
+start = Start
 
 #Home Page
 libredu-information = Libredu is a collection softwares for schools like timetabling, creating curriculum.
@@ -36,8 +38,8 @@ classes = Classes
 lectures = Lectures
 timetables = Timetables
 homepage = Home Page
-generator = Generate
-
+generator = Generator
+generate = Generate
 #Classes
 add-class = Add Class
 class = Class

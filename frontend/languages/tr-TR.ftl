@@ -12,6 +12,8 @@ save = Kaydet
 save-changes = Değişiklikleri Kaydet
 hide = Gizle
 show = Göster
+stop = Dur
+start = Başla
 
 #Home page
 libredu-information = Libredu okullar için bir yazılım kümesidir, ders dağıtımı ve yıllık plan oluşturma gibi.
@@ -36,8 +38,8 @@ classes = Sınıflar
 lectures = Dersler
 timetables = Ders Programları
 homepage = Anasayfa
-generator = Dağıtım Yap
-
+generator = Dağıtım
+generate = Dağıt
 #Sınıflar
 add-class = Sınıfı Ekle
 class = Sınıf
