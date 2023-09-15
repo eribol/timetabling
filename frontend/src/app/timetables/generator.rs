@@ -248,8 +248,7 @@ fn generate(){
                 break
             }
             
-            Timer::sleep(100).await;
-            
+            Timer::sleep(20).await;
         }
     })
 }
@@ -424,7 +423,7 @@ impl TimetableData {
                 let hours = same_day_acts
                     .iter()
                     .cloned()
-                    .find(|t| t.hour == (hour - 1) as i32 || t.hour == hour as i32 + act.hour as i32);
+                    .find(|t| hour > 0 && t.hour == (hour - 1) as i32 || t.hour == hour as i32 + act.hour as i32);
                 if hours.is_some() {
                     return true;
                 }
