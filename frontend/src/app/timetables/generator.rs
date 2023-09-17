@@ -247,7 +247,6 @@ fn generate(){
             else{
                 break
             }
-            
             Timer::sleep(20).await;
         }
     })

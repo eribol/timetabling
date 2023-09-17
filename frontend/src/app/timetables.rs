@@ -217,7 +217,7 @@ pub fn create_teachers_limitations(mut lims: Vec<TeacherLimitation>){
         let mut shifted = false;
         for i in 1..=7{
             if let Some(c_l) = c_lims.iter().find(|cl| cl.day == i){
-                if c_l.hours.len() < t_len{
+                if c_l.hours.len() != t_len{
                     shifted = true;
                     break;
                 }
@@ -249,7 +249,7 @@ pub fn create_classes_limitations(mut lims: Vec<ClassLimitation>){
         let mut shifted = false;
         for i in 1..=7{
             if let Some(c_l) = c_lims.iter().find(|cl| cl.day == i){
-                if c_l.hours.len() < t_len{
+                if c_l.hours.len() != t_len{
                     shifted = true;
                     break;
                 }
