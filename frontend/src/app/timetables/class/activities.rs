@@ -1,8 +1,7 @@
 use zoon::{named_color::*,*};
 use shared::msgs::activities::FullActivity;
-use crate::app::timetables::add_act::{home, teachers_full_name, add_act, change_add_act, ActCol, lecture_name, teacher_short_name, del_act};
+use crate::app::timetables::add_act::{home, teachers_full_name, add_act, ActCol, lecture_name, teacher_short_name, del_act};
 use crate::app::timetables::{activities, schedules};
-use crate::i18n::t_s;
 
 pub fn activities_view(id: i32)->impl Element{
     Column::new()
@@ -12,11 +11,6 @@ pub fn activities_view(id: i32)->impl Element{
         add_act().signal().map_true(||
             home()
     ))
-    .item(
-        Button::new()
-        .label_signal(add_act().signal().map_bool(|| t_s!("hide"), || t_s!("show")))
-        .on_click(change_add_act)
-    )
     .s(Padding::new().left(20))
     .item(
             Row::new()

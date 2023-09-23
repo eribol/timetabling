@@ -3,7 +3,7 @@ use shared::msgs::timetables::TimetableUpMsgs;
 use zoon::{named_color::*, *};
 use crate::app::timetables::selected_timetable;
 
-use super::{class::{selected_class, limitations::create_class_lims, cls_id}, add_act};
+use super::{class::{selected_class, limitations::create_class_lims}, add_act};
 
 pub fn classes_page_view()-> impl Element{
     Column::new()

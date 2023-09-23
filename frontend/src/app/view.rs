@@ -4,12 +4,12 @@ use crate::app::timetables::timetable_tabs;
 
 pub fn root() -> impl Element {
     Column::new()
-    .item_signal(pages().signal_ref(|page|{
-            match page{
-                Pages::Home => El::new().child(home()),
-                Pages::NotReady => El::new().child(login_page()),
-            }
-        }))
+    .item_signal(pages().signal_cloned().map(|page|{
+        match page{
+            Pages::Home => El::new().child(home()),
+            Pages::NotReady => El::new().child(login_page()),
+        }
+    }))
 }
 
 fn home() -> impl Element {

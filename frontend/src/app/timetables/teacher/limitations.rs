@@ -5,7 +5,7 @@ use shared::msgs::timetables::TimetableUpMsgs;
 use zoon::*;
 use zoon::named_color::*;
 use crate::app::timetables::add_act::{lecture_name, classes_full_name};
-use crate::app::timetables::class::limitations::{LIM_HEIGHT, LIM_WIDTH};
+use crate::app::timetables::class::limitations::{LIM_HEIGHT, LIM_WIDTH, show_lim_view};
 use crate::app::timetables::teachers::selected_teacher;
 use crate::app::timetables::{selected_timetable_hour, teachers_limitations, create_default_lim, selected_timetable, schedules, activities};
 use crate::connection::send_msg;
@@ -38,6 +38,11 @@ pub fn get_t_l(){
 pub fn loaded_lims()->&'static Mutable<bool>{
     Mutable::new(true)
 }
+pub fn limitations_view()->impl Element{
+    El::new()
+    .s(Align::new().top())
+    .child_signal(show_lim_view().signal().map_true(|| schedule_table()))
+}
 pub fn schedule_table() -> impl Element {
     Column::new()
     .item(
@@ -49,7 +54,7 @@ pub fn schedule_table() -> impl Element {
             .iter()
             .enumerate()
             .map(|day| El::new()
-                .child_signal(loaded_lims().signal().map_true(move || lim_col_view(day.0+1)))
+                .child(lim_col_view(day.0+1))
             )
         )
     )

@@ -7,16 +7,11 @@ use super::super::timetables::add_act::*;
 
 pub fn activities_view(id: i32)->impl Element{
     Column::new()
-        //.s(Align::new().right())
+        .s(Gap::new().y(5))
         .s(Align::new().top())
         .s(Width::fill())
         .item(    
             home()
-        )
-        .item(
-            Button::new()
-            .label_signal(add_act().signal().map_bool(|| t_s!("hide"), || t_s!("show")))
-            .on_click(change_add_act)
         )
         .s(Padding::new().left(20))
         .item(

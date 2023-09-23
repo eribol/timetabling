@@ -12,7 +12,7 @@ use crate::elements::*;
 use shared::msgs::{classes::*, timetables::{Schedule, TimetableUpMsgs}};
 
 use super::selected_class;
-use super::{cls_id, activities::{self, move_select}};
+use super::activities::{self, move_select};
 
 pub const LIM_HEIGHT: u32 = 75;
 pub const LIM_WIDTH: u32 = 120;
@@ -34,8 +34,22 @@ pub fn loaded_lims()->&'static Mutable<bool>{
     Mutable::new(false)
 }
 
-pub fn schedule_table() -> impl Element {
+#[static_ref]
+pub fn show_lim_view()->&'static Mutable<bool>{
+    Mutable::new(true)
+}
+pub fn change_view(){
+    let s = show_lim_view().get();
+    show_lim_view().set(!s);
+}
+pub fn limitations_view()->impl Element{
+    El::new()
+    .s(Align::new().top())
+    .child_signal(show_lim_view().signal().map_true(|| schedule_table()))
+}
+fn schedule_table() -> impl Element {
     Column::new()
+    //.s(Align::new().top())
     .item(
         Row::new()
         .s(Align::new().left())
@@ -45,7 +59,7 @@ pub fn schedule_table() -> impl Element {
             .iter()
             .enumerate()
             .map(|day| El::new()
-                .child_signal(loaded_lims().signal().map_true(move || lim_col_view(day.0+1)))
+                .child(lim_col_view(day.0+1))
             )
         )
     )
@@ -250,7 +264,7 @@ fn change_lim(day_index: i32, hour: usize){
         hours = day.hours.clone();
         hours[hour] = !hours[hour];
     }
-    class_limitations().lock_mut().set_cloned((day_index-1) as usize, ClassLimitation { class_id: super::cls_id().get(), day: day_index, hours});
+    class_limitations().lock_mut().set_cloned((day_index-1) as usize, ClassLimitation { class_id: selected_class().get_cloned().unwrap().id, day: day_index, hours});
 }
 fn change_day_lim(day_index: usize){
     let mut hours: Vec<bool> = vec![];
@@ -278,7 +292,7 @@ fn all_hours(hour: usize){
 
 pub fn add_lim(){
     let form = class_limitations().lock_mut().to_vec();
-    let class_id = super::cls_id().get();
+    let class_id = selected_class().get_cloned().unwrap().id;
     let msg = ClassUpMsgs::UpdateLimitations((class_id, form));
     let t_msg = TimetableUpMsgs::Class(msg);
     send_msg(shared::UpMsg::Timetable(t_msg));

@@ -1,16 +1,29 @@
-use zoon::*;
+use zoon::{*, named_color::BLUE_3};
+
+use super::class::limitations::{show_lim_view, change_view};
 pub mod activities;
 pub mod limitations;
 
 pub fn home(id: i32) -> impl zoon::Element {
     zoon::Column::new()
-        //.s(zoon::Align::center())
-        .s(zoon::Padding::all(10))
-        .item(Row::new()
-            .item(limitations::schedule_table())
-            .item(activities::activities_view(id))
-            .s(Gap::new().x(10))
+    .s(zoon::Padding::all(10))
+    .item(Row::new()
+        .item(limitations::limitations_view())
+        .item(Column::new()
+            .s(Height::exact(500))
+            .s(Align::new().top())
+            .s(Borders::all(Border::new().width(1).color(BLUE_3)))
+            .item(
+                Label::new()
+                .s(Align::center())
+                //.s(Height::exact(500))
+                .label_signal(show_lim_view().signal().map_bool(|| "<<<", || ">>>"))
+            )
+            .on_click(|| change_view())
         )
+        .item(activities::activities_view(id))
+        .s(Gap::new().x(10))
+    )
 }
 
 

@@ -8,6 +8,7 @@ use zoon::{named_color::*, *};
 use crate::i18n::t;
 use crate::connection::send_msg;
 use crate::elements::buttons;
+use super::class::limitations::show_lim_view;
 use super::{activities, schedules};
 use super::class::selected_class;
 use super::{lectures, classes, selected_timetable, teachers::{teachers, selected_teacher}};
@@ -144,13 +145,32 @@ fn change_hour(value: String){
 }
 
 fn add_act_view()->impl Element{
+    El::new()
+    .child_signal(
+        show_lim_view()
+        .signal()
+        .map_bool(|| add_act_col_view().into_raw_element(), || add_act_row_view().into_raw_element()))
+}
+
+fn add_act_col_view()->impl Element{
     Column::new()
-        .s(Gap::new().y(10))
-        .item(lectures_view())
-        .item(hour_view())
-        .item(
-            activity_classes()
-        ).item(activity_teachers())
+    .s(Gap::new().y(10))
+    .item(lectures_view())
+    .item(
+        activity_classes()
+    ).item(activity_teachers())
+    .item(hour_view())
+}
+
+fn add_act_row_view()->impl Element{
+    Row::new()
+    .s(Gap::new().x(10))
+    .s(Width::fill())
+    .item(lectures_view())
+    .item(
+        activity_classes()
+    ).item(activity_teachers())
+    .item(hour_view())
 }
 
 pub fn home()->impl Element{
@@ -164,24 +184,28 @@ pub fn home()->impl Element{
         }
     }
     Column::new()
-    .item_signal(
-        add_act().signal().map_true(add_act_view)
+    .s(Gap::new().y(10))
+    .item(
+        add_act_view()
     )
+    .item(alt_buttons())
     .item({
+        //let total = Mutable::new(0);
         Row::new()
+        .s(Font::new().weight(FontWeight::ExtraBold))
         .item_signal(t!("total-act-hours"))
         .item_signal(activities()
             .signal_vec_cloned()
-            .filter_signal_cloned(move |acts| 
+            .filter_signal_cloned(move |act| 
                 Mutable::new(
-                    acts.classes.iter()
-                    .any(|c| c == &id) && !schedules().lock_ref().iter().any(|s| s.activity == acts.id)
+                    act.classes.iter()
+                    .any(|c| c == &id) && !schedules().lock_ref().iter().any(|s| s.activity == act.id)
                 )
                 .signal()
             ).len()
         )
     })
-    .item(alt_buttons())
+    
 }
 
 fn alt_buttons()->impl Element{
@@ -195,7 +219,12 @@ fn alt_buttons()->impl Element{
 }
 
 fn lectures_view()->impl Element{
+    let a = Mutable::new(false);
     Column::new()
+    .s(Borders::all_signal(
+        a.signal().map_bool(|| Border::new().width(1).color(BLUE_2).solid(), || Border::new().width(1).color(BLUE_1).solid())
+    ))
+    .s(RoundedCorners::new().bottom(2).top(2))
     .item(
         Label::new().label_signal(t!("lecture"))
     ).item(
@@ -212,7 +241,7 @@ fn lectures_view()->impl Element{
                 .s(Background::new().color(GRAY_3))
                 .s(Borders::all(Border::new().width(2).solid().color(GRAY_1)))
                 .item(
-                    Button::new().label(&l.name)
+                    Button::new().label(format!("{}({})", &l.name, &l.kademe))
                 ).item(
                         RawHtmlEl::new("i")
                         .style("cursor", "pointer")
@@ -227,6 +256,7 @@ fn lectures_view()->impl Element{
                     TextInput::new()
                     .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
                     .id("subject").s(Align::new().left())
+                    .placeholder(Placeholder::with_signal(t!("filter-lectures")))
                     .on_change(filter_lectures))
             })
     ).element_below_signal(
@@ -236,9 +266,14 @@ fn lectures_view()->impl Element{
     )
 }
 fn hour_view()->impl Element{
+    let a = Mutable::new(false);
     Column::new().item(
         Label::new().label_signal(t!("act-hour"))
     )
+    .s(Borders::all_signal(
+        a.signal().map_bool(|| Border::new().width(1).color(BLUE_2).solid(), || Border::new().width(1).color(BLUE_1).solid())
+    ))
+    .s(RoundedCorners::new().bottom(2).top(2))
     .item(
         Label::new()
         .s(Font::new().weight(FontWeight::ExtraLight))
@@ -316,6 +351,7 @@ fn activity_classes()-> impl Element{
                     Borders::all(Border::new().width(1).dotted().color(GRAY_5))
                 )
                 .id("classes")
+                .placeholder(Placeholder::with_signal(t!("filter-classes")))
                 .on_change(filter_classes))
             ).element_below_signal(classes_modal().signal().map_true(||
                 class_modal_view("classes"))
@@ -391,7 +427,9 @@ fn activity_teachers()-> impl Element{
                 .s(
                     Borders::all(Border::new().width(1).dotted().color(GRAY_1))
                 )
-                .id("classes")
+                .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
+                .id("teachers")
+                .placeholder(Placeholder::with_signal(t!("filter-teachers")))
                 .on_change(filter_teachers))
             ).element_below_signal(teachers_modal().signal().map_true(||
                 teacher_modal_view("teachers"))

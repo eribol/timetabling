@@ -1,26 +1,34 @@
 use shared::msgs::classes::Class;
-use zoon::*;
+use zoon::{*, named_color::BLUE_3};
 
-use self::limitations::loaded_lims;
+use self::limitations::{loaded_lims, show_lim_view};
 pub mod activities;
 pub mod limitations;
 
 pub fn home(id: i32) -> impl zoon::Element {
     zoon::Column::new()
     .s(Padding::new().top(20))
+    .s(Height::exact(1080))
     .item(Row::new()
         .s(Padding::new().left(20).right(20))
         .item_signal(loaded_lims().signal().map_true(||
-            limitations::schedule_table()
+            limitations::limitations_view()
         ))
+        .item(Column::new()
+            .s(Height::exact(500))
+            .s(Align::new().top())
+            .s(Borders::all(Border::new().width(1).color(BLUE_3)))
+            .item(
+                Label::new()
+                .s(Align::center())
+                //.s(Height::exact(500))
+                .label_signal(show_lim_view().signal().map_bool(|| "<<<", || ">>>"))
+            )
+            .on_click(|| limitations::change_view())
+        )
         .item(activities::activities_view(id))
         .s(Gap::new().x(10))
     )
-}
-
-#[static_ref]
-pub fn cls_id()-> &'static Mutable<i32>{
-    Mutable::new(-1)
 }
 
 #[static_ref]

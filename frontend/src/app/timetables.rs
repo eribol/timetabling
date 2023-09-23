@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::connection::send_msg;
-use crate::i18n::t;
+use crate::i18n::{t, lang, self};
 use crate::app::*;
 use shared::UpMsg;
 use shared::msgs::teachers::{TeacherLimitation, TeacherUpMsgs};
@@ -123,36 +123,50 @@ pub struct School {
 
 pub fn timetable_tabs() -> impl Element {
     Row::new()
-        .s(Padding::new().bottom(25))
-        .s(Gap::new().x(50))
-        .s(Align::center())
-        .s(Font::new().weight(FontWeight::Medium))
-        .item(
-            RawHtmlEl::new("select").children_signal_vec(timetables().signal_vec_cloned().map(
-                |group| {
-                    RawHtmlEl::new("option")
-                        .event_handler(move |_event: events::Click| {
-                            change_timetable(group.id.to_string())
-                        })
-                        .child(format!("{}({})", group.name, group.id))
-                },
-            )),
+    .s(Padding::new().bottom(25))
+    .s(Gap::new().x(50))
+    .s(Align::center())
+    .s(Font::new().weight(FontWeight::Medium))
+    .item(
+        Label::new().label_signal(t!("generate-module")).s(Align::new().left())
+    )
+    .item_signal(school().signal_cloned().map_some(|s| s.name))
+    .item(
+        RawHtmlEl::new("select").children_signal_vec(timetables().signal_vec_cloned().map(
+            |group| {
+                RawHtmlEl::new("option")
+                .event_handler(move |_event: events::Click| {
+                    change_timetable(group.id.to_string())
+                })
+                .child(format!("{}({})", group.name, group.id))
+        }
+        )),
+    )
+    .items(TimetablePages::iter().map(|page| {
+        Button::new()
+        .s(
+            Borders::new().bottom_signal(selected_page().signal_ref(move |p| {
+                if p == &page {
+                    Border::new().width(2).solid().color(BLUE_5)
+                } else {
+                    Border::new().width(0).solid().color(GRAY_0)
+                }
+            })),
         )
-        .items(TimetablePages::iter().map(|page| {
-            Button::new()
-                .s(
-                    Borders::new().bottom_signal(selected_page().signal_ref(move |p| {
-                        if p == &page {
-                            Border::new().width(2).solid().color(BLUE_5)
-                        } else {
-                            Border::new().width(0).solid().color(GRAY_0)
-                        }
-                    })),
-                )
-                //.s(Width::exact(150))
-                .on_click(move || change_page(page))
-                .label_signal(t!(format!("{}", page.label())))
-        }))
+        .on_click(move || change_page(page))
+        .label_signal(t!(format!("{}", page.label())))
+    }))
+    .item(lang_label())
+}
+
+fn lang_label() -> impl Element{
+    Button::new()
+    .label_signal(
+        lang()
+        .signal_ref(|l| 
+            l.label()
+        )
+    ).on_press(i18n::change_locale)
 }
 
 pub fn pages_view()-> impl Element{

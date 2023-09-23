@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-
 use crate::{*, 
     app::{
         set_page_id, 
         timetables::{
             self, 
-            class::cls_id, teachers::{teachers, selected_teacher}}, Pages
+            teachers::{teachers, selected_teacher}}, Pages
         }
     };
-use shared::{msgs::{timetables::TimetableDownMsgs, activities::ActivityDownMsgs, classes::{ClassDownMsgs, Class}, teachers::TeacherDownMsgs}, DownMsg, UpMsg};
+use shared::{msgs::{timetables::TimetableDownMsgs, activities::ActivityDownMsgs, classes::ClassDownMsgs, teachers::TeacherDownMsgs}, DownMsg, UpMsg};
 use crate::app::timetables::*;
 #[static_ref]
 pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
