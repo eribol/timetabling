@@ -1,22 +1,27 @@
-use shared::msgs::{teachers, activities::FullActivity};
-use web_sys::window;
-use genpdf::*;
-use zoon::paragraph;
+use shared::msgs::activities::FullActivity;
 
-use crate::app::timetables::{selected_timetable_hour, schedules, activities, teachers::teachers, add_act::{classes_full_name, lecture_name, teachers_full_name}};
+use genpdf::*;
+
+use crate::app::timetables::{
+    selected_timetable_hour, schedules, activities, 
+    add_act::{ 
+        lecture_name, 
+        teachers_full_name
+    }, 
+    school, classes::classes
+};
 
 pub fn prints(){
     let fon_family = crate::fonts::font_family();
     let mut doc = genpdf::Document::new(fon_family);
     // Change the default settings
-    doc.set_title("Demo document");
+    doc.set_title(format!("{}", school().get_cloned().unwrap().name));
     // Customize the pages
     let mut decorator = genpdf::SimplePageDecorator::new();
-    println!("a3");
     decorator.set_margins(10);
     doc.set_page_decorator(decorator);
     let mut buf: Vec<u8> = Vec::new();
-    print_teachers(&mut doc);
+    print_classes(&mut doc);
     doc.render(&mut buf).expect("Render edilemedi");
     let png_jsarray: zoon::JsValue = js_sys::Uint8Array::from(&buf[..]).into();
     // the buffer has to be an array of arrays
@@ -31,7 +36,8 @@ pub fn prints(){
     window.open_with_url(&url).expect("Pdf açılamadı");
 }
 
-fn print_teachers(doc: &mut genpdf::Document){
+fn print_classes(doc: &mut genpdf::Document){
+    let school_name = school().get_cloned().unwrap().name;
     doc.set_minimal_conformance();
     doc.set_line_spacing(1.25);
     let mut decorator = genpdf::SimplePageDecorator::new();
@@ -39,8 +45,8 @@ fn print_teachers(doc: &mut genpdf::Document){
 
     doc.set_page_decorator(decorator);
     doc.set_line_spacing(1.25);
-    let teachers = teachers().lock_mut().to_vec();
-    for teacher in teachers{
+    let clss = classes().lock_mut().to_vec();
+    for class in clss{
         let mut title = elements::LinearLayout::vertical();
 
         let mut title_style = style::Style::new();
@@ -48,35 +54,33 @@ fn print_teachers(doc: &mut genpdf::Document){
         title_style.set_font_size(20);
 
         let title_paragraph = elements::Paragraph::default();
-        title.push(title_paragraph.styled_string("Okul Adı", title_style).aligned(Alignment::Center));
-        let teacher_name = "A";
-        let teacher_name = teacher_name.replace("\u{2068}", "");
-        let teacher_name = teacher_name.replace("\u{2069}", "");
+        title.push(title_paragraph.styled_string(&school_name, title_style).aligned(Alignment::Center));
+        let cls_name = format!("{}{}", class.kademe, class.sube);
         let mut teacher_style = style::Style::new();
         teacher_style.set_italic();
         teacher_style.set_font_size(18);
-        title.push(elements::Paragraph::new(&teacher_name).aligned(Alignment::Center));
+        title.push(elements::Paragraph::new(&cls_name).aligned(Alignment::Center));
         doc.push(title);
         //doc.push(elements::Break::new(1));
-        add_row(doc, teacher.id);
+        add_row(doc, class.id);
         doc.push(elements::PageBreak::new());
     }
 }
-
-fn add_row(doc:&mut genpdf::Document, t: i32){
+use crate::i18n::t_s;
+fn add_row(doc:&mut genpdf::Document, c: i32){
     let group_hour: Vec<usize> = selected_timetable_hour().lock_mut().to_vec().into_iter().map(|a| a as usize).collect();
     let len = group_hour.len();
     let mut table = elements::TableLayout::new(vec![8, 8, 8, 8, 8, 8, 8, 8]);
     table.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
     let mut row = table.row();
-    row.push_element(create_row_title(format!("{} {}", "Günler", "Saatler")).aligned(Alignment::Center));
+    row.push_element(create_row_title(format!("{} {}", t_s!("days"), t_s!("hours"))).aligned(Alignment::Center));
     for day in &["p","s","ç","p","c","ct","p"]{
         row.push_element(create_row_title(format!("{}",day)).aligned(Alignment::Center));
     }
     row.push().expect("Invalid table row");
     let sch = schedules().lock_mut().to_vec();
     let acts = activities().lock_mut().to_vec();
-    let acts: Vec<FullActivity> = acts.into_iter().filter(|a| a.teachers.iter().any(|t2| t2 == &t)).collect();
+    let acts: Vec<FullActivity> = acts.into_iter().filter(|a| a.classes.iter().any(|c2| c2 == &c)).collect();
     for h in 0..len{
         let mut row = table.row();
         let mut hour_row = elements::LinearLayout::vertical();

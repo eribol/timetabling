@@ -14,6 +14,7 @@ hide = Gizle
 show = Göster
 stop = Dur
 start = Başla
+generate-module = Ders Dağıtım Modülü
 
 #Home page
 libredu-information = Libredu okullar için bir yazılım kümesidir, ders dağıtımı ve yıllık plan oluşturma gibi.
@@ -39,7 +40,7 @@ lectures = Dersler
 timetables = Ders Programları
 homepage = Anasayfa
 generator = Dağıtım
-generate = Dağıt
+generate = Dersleri Dağıt
 #Sınıflar
 add-class = Sınıfı Ekle
 class = Sınıf
@@ -64,7 +65,9 @@ select-act-classes = Aktivite için sınıf(lar)ı seçin
 select-act-teachers = Aktivite için öğretmen(ler)i seçin
 total-act-hours = Toplam ders yükü = 
 use-space-for-blocks = Bloklar için boşluk kullanın
-
+filter-teachers = Öğretmenleri Filtrele
+filter-classes = Sınıfları Filtrele
+filter-lectures = Dersleri Filtrele
 #Günler
 days = Days
 hours = Hours

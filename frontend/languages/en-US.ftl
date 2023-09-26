@@ -14,6 +14,7 @@ hide = Hide
 show = Show
 stop = Stop
 start = Start
+generate-module = Generate Module
 
 #Home Page
 libredu-information = Libredu is a collection softwares for schools like timetabling, creating curriculum.
@@ -39,7 +40,7 @@ lectures = Lectures
 timetables = Timetables
 homepage = Home Page
 generator = Generator
-generate = Generate
+generate = Generate Timetabling
 #Classes
 add-class = Add Class
 class = Class
@@ -64,7 +65,9 @@ select-act-classes = Select class/classes for activity
 select-act-teachers = Select teacher/teachers for activity
 total-act-hours = Total Act Hours = 
 use-space-for-blocks = Use space for blocks
-
+filter-teachers = Filter Teachers
+filter-classes = Filter Classes
+filter-lectures = Filter Lectures
 #Days
 days = Days
 hours = Hours

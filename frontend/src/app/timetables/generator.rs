@@ -56,6 +56,12 @@ fn right_menu()-> impl Element{
     ).item(
         buttons::_default("Yazdır-Sınıflar").on_click(|| prints::classes::prints())
     )
+    .item(
+        buttons::_default("Çarşaf Sınıflar").on_click(|| prints::all_classes::print_class_all())
+    )
+    .item(
+        buttons::_default("Çarşaf Öğretmenler").on_click(|| prints::all_teachers::print_teacher_all())
+    )
 }
 
 fn generator() -> impl Element {
@@ -229,8 +235,8 @@ fn create_acts_data(){
 fn generate(){
     let params = Params{
         hour: hour().get() as i32,
-        depth: 2,
-        depth2: 2
+        depth: 4,
+        depth2: 4
     };
     Task::start(async move{
         loop{
