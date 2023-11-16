@@ -235,7 +235,7 @@ fn create_acts_data(){
 fn generate(){
     let params = Params{
         hour: hour().get() as i32,
-        depth: 4,
+        depth: 6,
         depth2: 4
     };
     Task::start(async move{
