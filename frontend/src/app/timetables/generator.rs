@@ -552,7 +552,7 @@ impl TimetableData {
                                 .filter(|t| {
                                     t.day_id == teacher_available.day as i32
                                         && t.hour as usize == i
-                                        && ignores.id != t.activity
+                                        //&& ignores.id != t.activity
                                         && activities.get(&t.activity).is_some()
                                 })
                                 .collect();
