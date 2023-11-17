@@ -182,10 +182,10 @@ fn hour_view(h: bool, day: TeacherLimitation, hour: usize)->impl Element{
                 Some(s) => {
                     let acts = activities().lock_mut().to_vec();
                     let act = acts.iter().find(|a| a.id == s.activity).unwrap();
-                    schedule_view(act).into_raw_element()
+                    schedule_view(act).into_raw()
                 },
                 None => Column::new()
-                    .item(Button::new().label("".to_string())).into_raw_element()
+                    .item(Button::new().label("".to_string())).into_raw()
                 }
         })
     )

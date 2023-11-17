@@ -172,9 +172,9 @@ fn lang_label() -> impl Element{
 pub fn pages_view()-> impl Element{
     Column::new().item_signal(selected_page().signal().map(|page| {
         match page{
-            TimetablePages::Classes => classes_page_view().into_raw_element(),
-            TimetablePages::Teachers => teachers::home().into_raw_element(),
-            TimetablePages::Generator => generator::home().into_raw_element(),
+            TimetablePages::Classes => classes_page_view().into_raw(),
+            TimetablePages::Teachers => teachers::home().into_raw(),
+            TimetablePages::Generator => generator::home().into_raw(),
         }
     }))
 }

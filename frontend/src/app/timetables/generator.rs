@@ -138,8 +138,8 @@ fn buttons()-> impl Element{
                 || Label::new().s(Align::center()).label_signal(t!("stop"))))
         .s(Width::growable())
         .on_press(||{
-            generate();
-            is_generate().set(!is_generate().get());  
+            is_generate().set(!is_generate().get());
+            generate();  
         })
         .s(Font::new().weight(FontWeight::Bold))
     )
@@ -236,26 +236,29 @@ fn generate(){
     let params = Params{
         hour: hour().get() as i32,
         depth: 8,
-        depth2: 4
+        depth2: 5
     };
-    Task::start(async move{
-        loop{
-            let mut t_data = data().clone().get_cloned();
-            let len = t_data.timetables.len();
-            if len == total_hour().get(){
-                break;
+    if !is_generate().get(){
+        Task::start(async move{
+            loop{
+                let mut t_data = data().clone().get_cloned();
+                let len = t_data.timetables.len();
+                if len == total_hour().get(){
+                    is_generate().set(true);
+                    break;
+                }
+                if t_data.generate(&params) && !is_generate().get(){
+                    schedules().lock_mut().replace_cloned(*t_data.timetables.clone());
+                    data().set(t_data);
+                }
+                else{
+                    break
+                }
+                Timer::sleep(20).await;
             }
-            if t_data.generate(&params) && !is_generate().get(){
-                schedules().lock_mut().replace_cloned(*t_data.timetables.clone());
-                data().set(t_data);
-                
-            }
-            else{
-                break
-            }
-            Timer::sleep(20).await;
-        }
-    })
+        })
+    }
+    
 }
 
 fn create_ng()->HashMap<i32,HashMap<i32, Activity>>{
@@ -336,14 +339,17 @@ pub struct TimetableData {
 
 impl TimetableData {
     pub fn generate(&mut self, params: &Params) -> bool {
-        self.acts.sort_by(|a, b| b.hour.cmp(&a.hour));
+        use zoon::println;
         self.acts.shuffle(&mut thread_rng());
+        self.acts.sort_by(|a, b| b.hour.cmp(&a.hour));
+        
         let acts = self.not_placed_acts();
         if acts.len() == 0 {
             return false;
         }
         //
         let act = &acts[0];
+        //println!("{act:?}");
         let available = self.find_timeslot(act, params);
         match available {
             Some(slots) => {
@@ -552,7 +558,7 @@ impl TimetableData {
                                 .filter(|t| {
                                     t.day_id == teacher_available.day as i32
                                         && t.hour as usize == i
-                                        //&& ignores.id != t.activity
+                                        && ignores.id != t.activity
                                         && activities.get(&t.activity).is_some()
                                 })
                                 .collect();

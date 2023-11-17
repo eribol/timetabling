@@ -149,7 +149,7 @@ fn add_act_view()->impl Element{
     .child_signal(
         show_lim_view()
         .signal()
-        .map_bool(|| add_act_col_view().into_raw_element(), || add_act_row_view().into_raw_element()))
+        .map_bool(|| add_act_col_view().into_raw(), || add_act_row_view().into_raw()))
 }
 
 fn add_act_col_view()->impl Element{

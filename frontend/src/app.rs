@@ -66,8 +66,3 @@ pub fn load_logged_user() {
         self::timetables::get_school();
     }
 }
-
-trait ModalElement{
-    type Item;
-    fn into_iter(self) -> &'static dyn Element<Item = Self::Item, IntoIter = Self::Item>;
-}
