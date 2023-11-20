@@ -3,7 +3,7 @@ use genpdf::{elements, style, Alignment, Document, Size};
 use shared::msgs::activities::FullActivity;
 use shared::msgs::teachers::Teacher;
 use shared::msgs::timetables::Schedule;
-use crate::app::timetables::{selected_timetable_hour, schedules, activities, lectures, teachers, classes};
+use crate::app::timetables::{selected_timetable_hour, schedules, activities, teachers, classes};
 use crate::app::timetables::school;
 
 

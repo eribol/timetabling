@@ -1,6 +1,6 @@
+#[allow(unused)]
+#[allow(unused_mut)]
 use zoon::*;
-
-
 mod app;
 mod i18n;
 mod router;

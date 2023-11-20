@@ -108,7 +108,7 @@ fn login() {
     });
 }
 
-pub fn get_school() {
+pub fn _get_school() {
     use crate::connection::*;
     Task::start(async {
         let msg = UpMsg::GetSchool;

@@ -1,10 +1,9 @@
 use genpdf::elements::TableLayout;
-use genpdf::{elements, style, Alignment, Document, Size, PaperSize, Element};
+use genpdf::{elements, style, Alignment, Document, Size};
 use shared::msgs::activities::FullActivity;
 use shared::msgs::classes::Class;
 use shared::msgs::timetables::Schedule;
 
-use crate::DAYS;
 use crate::app::timetables::{selected_timetable_hour, schedules, activities, lectures};
 use crate::app::timetables::{school, classes::classes};
 

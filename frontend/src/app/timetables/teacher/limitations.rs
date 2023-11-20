@@ -146,7 +146,7 @@ fn placed(act: &FullActivity, hour: usize, day: usize){
     };
     let acts = activities().lock_mut().to_vec();
     activities().lock_mut().replace_cloned(acts);
-    move_select().set(None)
+    move_select().set(None);
 }
 
 fn hour_view(h: bool, day: TeacherLimitation, hour: usize)->impl Element{

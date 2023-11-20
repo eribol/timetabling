@@ -81,15 +81,32 @@ pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
         DownMsg::Activity(a_msg) =>{
             match a_msg{
                 ActivityDownMsgs::AddedAct(act) => {
-                    use zoon::println;
-                    println!("act eklendi");
-                    activities().lock_mut().push_cloned(act)
+                    activities().lock_mut().push_cloned(act.clone());
+                    let teachers = act.teachers;
+                    let classes = act.classes;
+                    let hour = act.hour as u32;
+                    for t in &teachers{
+                        let tot = total_act_hours_for_teacher().lock_mut();
+                        let tot = tot.get(t);
+                        total_act_hours_for_teacher().lock_mut().insert_cloned(t.clone(), tot.unwrap()+hour);  
+                    }
+                     for c in &classes{
+                        let c_tot = total_act_hours_for_classes().lock_mut();
+                        let c_tot = c_tot.get(c);
+                        total_act_hours_for_teacher().lock_mut().insert_cloned(c.clone(), c_tot.unwrap()+hour);  
+                    }
                 },
                 ActivityDownMsgs::DeletedAct(act_id) => {
                     let mut acts = activities().lock_mut().to_vec();
                     let act = acts.iter().enumerate().find(|a| a.1.id == act_id).unwrap();
+                    let teacher = act.1.teachers[0];
+                    let hour = act.1.hour as u32;
                     acts.remove(act.0);
                     activities().lock_mut().replace_cloned(acts);
+                    let mut tots = total_act_hours_for_teacher().lock_mut();
+                    let mut tots2 = tots.clone();
+                    let tot = tots2.get_mut(&teacher).unwrap();
+                    tots.insert(teacher, *tot-hour);
                 },
                 _ => ()
             } 

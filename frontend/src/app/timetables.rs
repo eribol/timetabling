@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use crate::connection::send_msg;
 use crate::i18n::{t, lang, self};
 use crate::app::*;
@@ -15,10 +15,8 @@ use shared::msgs::lectures::*;
 use self::add_act::{change_act_classes, change_act_teachers};
 use self::class::selected_class;
 use self::classes::{classes_page_view, classes};
+use self::generator::fix_schedules;
 use self::teachers::{teachers, selected_teacher};
-
-
-
 pub mod classes;
 pub mod teacher;
 pub mod teachers;
@@ -34,7 +32,7 @@ pub fn school() -> &'static Mutable<Option<School>> {
 }
 
 #[static_ref]
-fn selected_page() -> &'static Mutable<TimetablePages> {
+pub fn selected_page() -> &'static Mutable<TimetablePages> {
     Mutable::new(TimetablePages::default())
 }
 
@@ -42,7 +40,39 @@ fn selected_page() -> &'static Mutable<TimetablePages> {
 pub fn timetables() -> &'static MutableVec<Timetable> {
     MutableVec::new_with_values(vec![])
 }
-
+#[static_ref]
+pub fn total_act_hours_for_teacher() -> &'static MutableBTreeMap<i32, u32> {
+    let mut h = BTreeMap::new();
+    for t in teachers().lock_ref().to_vec(){
+        h.insert(t.id, 0);
+    }
+    for act in activities().lock_ref().to_vec(){
+        for t in act.teachers{
+           let tot = h.get_mut(&t);
+           if let Some(tot) = tot{
+               *tot = *tot + act.hour as u32;
+           }
+        }
+    }
+    MutableBTreeMap::with_values(h)
+}
+#[static_ref]
+pub fn total_act_hours_for_classes() -> &'static MutableBTreeMap<i32, u32> {
+    let mut h =     BTreeMap::new();
+    for t in teachers().lock_ref().to_vec(){
+        h.insert(t.id, 0);
+    }
+    
+    for act in activities().lock_ref().to_vec(){
+        for t in act.classes{
+           let tot = h.get_mut(&t);
+           if let Some(tot) = tot{
+               *tot = *tot + act.hour as u32;
+           }
+        }
+    }
+    MutableBTreeMap::with_values(h)
+}
 pub fn get_timetables() {
     use crate::connection::*;
     use shared::*;
@@ -112,7 +142,7 @@ fn change_page(p: TimetablePages) {
     selected_teacher().set(None);
     change_act_classes();
     change_act_teachers();
-    selected_page().set(p)
+    selected_page().set(p);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -180,7 +210,7 @@ pub fn pages_view()-> impl Element{
 }
 #[derive(Clone, Copy, IntoStaticStr, EnumIter, Debug, Default, PartialEq)]
 #[strum(crate = "strum")]
-enum TimetablePages {
+pub enum TimetablePages {
     #[default]
     Classes,
     Teachers,

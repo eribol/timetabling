@@ -1,6 +1,5 @@
 use crate::connection;
-use bcrypt::{hash, verify};
-use chrono;
+use bcrypt::verify;
 use moon::*;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

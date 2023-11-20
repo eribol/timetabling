@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -8,10 +8,13 @@ use shared::msgs::teachers::{TeacherLimitation, Teacher};
 use shared::msgs::{timetables::*, activities::Activity};
 use zoon::*;
 use zoon::named_color::{BLUE_3, BLUE_1};
+use crate::app::timetables::classes::classes;
+use crate::connection::send_msg;
 use crate::i18n::t;
 use crate::elements::{text_inputs, buttons};
 
 
+use super::teachers::teachers;
 use super::{schedules, activities, teachers_limitations, classes_limitations, prints};
 
 pub fn home() -> impl Element {
@@ -50,7 +53,7 @@ fn right_menu()-> impl Element{
         Padding::new().left(20)
     )
     .item(
-        buttons::default_with_signal(t!("save"))
+        buttons::default_with_signal(t!("save")).on_click(|| save_schedules())
     ).item(
         buttons::_default("Yazdır").on_click(|| prints::teachers::prints())
     ).item(
@@ -177,7 +180,15 @@ fn data()->&'static Mutable<TimetableData>{
     use super::*;
     Mutable::new(create_data())
 }
-
+fn save_schedules(){
+    let schedules = schedules().lock_mut().to_vec();
+    let acts = activities().lock_mut().to_vec();
+    let acts = acts.iter().filter(|a| !schedules.iter().any(|s| s.activity == a.id)).map(|a| a.id).collect::<Vec<i32>>();
+    let del_msg = TimetableUpMsgs::DelSchedules(acts);
+    let update_msg = TimetableUpMsgs::UpdateSchedules(schedules);
+    //send_msg(shared::UpMsg::Timetable(del_msg));
+    send_msg(shared::UpMsg::Timetable(update_msg));
+}
 #[static_ref]
 fn is_generate()->&'static Mutable<bool>{
     Mutable::new(true)
@@ -193,6 +204,8 @@ fn set_data(){
     data().set(create_data());
 }
 fn create_data()->TimetableData{
+    use zoon::println;
+    println!("data");
     create_acts_data();
     let tat = teachers_limitations().get_cloned();
     let cat = classes_limitations().get_cloned();
@@ -215,7 +228,81 @@ fn create_data()->TimetableData{
         teachers: super::teachers::teachers().lock_mut().to_vec(),
         timetables: Box::new(schedules().lock_mut().to_vec())
     };
+    is_data_ready().set(true);
     dt
+}
+#[static_ref]
+fn is_data_ready()->&'static Mutable<bool>{
+    Mutable::new(false)
+}
+pub fn fix_schedules(){
+    if !is_data_ready().get(){
+        data();
+        //is_generate().set(!is_generate().get());
+        return ();
+    }
+    use zoon::println;
+    println!("fix");
+    let clss = classes().lock_mut().to_vec();
+    let c_acts = activities().lock_mut().to_vec();
+    let schdls = schedules().lock_mut().to_vec();
+    for c in &clss{
+        let c_acts: Vec<&FullActivity> = c_acts.iter().filter(|a| a.classes.iter().any(|c2| c2== &c.id)).collect();
+        let c_lim = classes_limitations().lock_mut();
+        let c_lim = c_lim.get(&c.id).unwrap();
+        for c_l in c_lim{
+            for h in c_l.hours.iter().enumerate(){
+                if !h.1{
+                    let c_sch = schdls.clone().into_iter()
+                    .enumerate()
+                    .find(|sc| sc.1.day_id == c_l.day && sc.1.hour as usize == h.0 && c_acts.iter().any(|c_a| c_a.id == sc.1.activity));
+                    if let Some(cs) = c_sch{
+                        let mut dt = data().get_cloned();
+                        let acts = dt.acts.clone();
+                        let act = acts.iter().find(|a| a.id == cs.1.activity).unwrap();
+                        dt.delete_activity(act);
+                        //*dt.timetables = schdls.clone();
+                        data().set(dt);
+                    }
+                }
+            }
+        }
+    }
+    let tchrs = teachers().lock_mut().to_vec();
+    let t_acts = activities().lock_mut().to_vec();
+    for t in &tchrs{
+        let t_acts: Vec<&FullActivity> = t_acts.iter().filter(|a| a.teachers.iter().any(|c2| c2== &t.id)).collect();
+        let t_lim = teachers_limitations().lock_mut();
+        let t_lim = t_lim.get(&t.id).unwrap();
+        for t_l in t_lim{
+            for h in t_l.hours.iter().enumerate(){
+                if !h.1{
+                    let t_sch = schdls.clone().into_iter()
+                    .enumerate()
+                    .find(|sc| sc.1.day_id == t_l.day && sc.1.hour as usize == h.0 && t_acts.iter().any(|c_a| c_a.id == sc.1.activity));
+                    if let Some(ts) = t_sch{
+                        let mut dt = data().get_cloned();
+                        let acts = dt.acts.clone();
+                        let mut tat = dt.tat.clone().get(&t.id).unwrap().clone();
+                        tat[t_l.day as usize].hours[h.0] = false;
+                        let act = acts.iter().find(|a| a.id == ts.1.activity).unwrap();
+                        dt.delete_activity(act);
+                        dt.tat.insert(t.id, tat.clone());
+                        data().set(dt);
+                    }
+                }
+                else{
+                    let mut dt = data().get_cloned();
+                    let mut tat = dt.tat.clone().get(&t.id).unwrap().clone();
+                    tat[t_l.day as usize].hours[h.0] = true;
+                    dt.tat.insert(t.id, tat.clone());
+                    data().set(dt);
+                }
+            }
+        }    
+    }
+    let s = data().get_cloned().timetables;
+    schedules().lock_mut().replace_cloned(*s);
 }
 fn create_acts_data(){
     let activities = activities().lock_mut().to_vec();
@@ -236,10 +323,12 @@ fn generate(){
     let params = Params{
         hour: hour().get() as i32,
         depth: 8,
-        depth2: 5
+        depth2: 6
     };
+    fix_schedules();
     if !is_generate().get(){
         Task::start(async move{
+            Timer::sleep(1000).await;
             loop{
                 let mut t_data = data().clone().get_cloned();
                 let len = t_data.timetables.len();
@@ -339,10 +428,9 @@ pub struct TimetableData {
 
 impl TimetableData {
     pub fn generate(&mut self, params: &Params) -> bool {
-        use zoon::println;
+        //use zoon::println;
         self.acts.shuffle(&mut thread_rng());
-        self.acts.sort_by(|a, b| b.hour.cmp(&a.hour));
-        
+        //self.acts.sort_by(|a, b| b.hour.cmp(&a.hour));
         let acts = self.not_placed_acts();
         if acts.len() == 0 {
             return false;

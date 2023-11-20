@@ -1,8 +1,6 @@
 use zoon::{named_color::*,*};
 use shared::msgs::activities::FullActivity;
 use crate::app::timetables::{activities, schedules};
-
-use crate::i18n::t_s;
 use super::super::timetables::add_act::*;
 
 pub fn activities_view(id: i32)->impl Element{
@@ -21,6 +19,10 @@ pub fn activities_view(id: i32)->impl Element{
             .items_signal_vec(
                 activities()
                 .signal_vec_cloned()
+                .sort_by_cloned(|x,y| 
+                   classes_full_name(x.clone()).cmp(&classes_full_name(y.clone()))
+                    .then(x.subject.cmp(&y.subject))
+                )
                 .filter_signal_cloned(move |acts| 
                     Mutable::new(
                         acts.teachers.iter()
@@ -53,7 +55,7 @@ fn act_view(act: ActCol)->impl Element{
     let del = act.del;
     Column::new()
     .s(Padding::new().top(10))
-    .s(Width::growable())
+    .s(Width::growable().min(75))
     .s(Height::growable())
     .s(RoundedCorners::all(5))
     .s(

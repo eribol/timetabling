@@ -1,4 +1,4 @@
-use crate::tokio::sync::RwLock;
+use crate::{tokio::sync::RwLock, connection::REDISDB};
 use moon::{Lazy, *};
 use redis;
 use sqlx::{PgPool, Pool, Postgres};
@@ -12,7 +12,7 @@ pub static POSTGRES: Lazy<RwLock<PgPool>> = Lazy::new(|| {
     )
 });
 
-static REDISDB: Lazy<RwLock<redis::Client>> =
+static _REDISDB: Lazy<RwLock<redis::Client>> =
     Lazy::new(|| RwLock::new(redis::Client::open("redis://127.0.0.1:6379/").unwrap()));
 pub async fn get_user<'a, U: Deserialize<'a> + redis::FromRedisValue>(
     auth: &'a str,

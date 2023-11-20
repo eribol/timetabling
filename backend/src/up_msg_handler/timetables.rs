@@ -1,11 +1,10 @@
 use crate::connection::sql::POSTGRES;
 use moon::tokio_stream::StreamExt;
-use moon::*;
 use shared::msgs::activities::{ActivityDownMsgs, AddActivity, FullActivity};
-use shared::msgs::classes::{ClassUpMsgs, ClassDownMsgs};
+use shared::msgs::classes::ClassUpMsgs;
 use shared::msgs::teachers::TeacherUpMsgs;
 use shared::msgs::timetables::*;
-use shared::{DownMsg, UpMsg};
+use shared::DownMsg;
 use sqlx::Row;
 
 use super::classes::update_class_limitations;
@@ -28,7 +27,9 @@ pub async fn timetable_msg(msg: TimetableUpMsgs, school_id: i32)->DownMsg{
                 TeacherUpMsgs::UpdateLimitations((group_id, form)) => update_teacher_limitations(school_id, group_id, form).await,
             }
         }
-        TimetableUpMsgs::GetSchedules(group_id) => get_schedules(school_id, group_id).await
+        TimetableUpMsgs::GetSchedules(group_id) => get_schedules(school_id, group_id).await,
+        TimetableUpMsgs::DelSchedules(acts) => del_schedules(acts).await,
+        TimetableUpMsgs::UpdateSchedules(schedules) => update_schedules(schedules).await
     }
 }
 pub async fn get_classes(id: i32) -> DownMsg {
@@ -139,43 +140,52 @@ pub async fn get_activities(school_id: i32, group_id: i32) -> DownMsg {
 
 pub async fn get_schedules(school_id: i32, group_id: i32) -> DownMsg {
     let db = POSTGRES.read().await;
-    let ids = get_ids(school_id, group_id).await.unwrap();
-    let mut groups_query = 
-        sqlx::query(r#"select id, day_id, hour, locked, activity
-                        from class_timetable where id = any($1)"#)
-
-        .bind(&ids)
-        .fetch(&*db);
+    let ids = get_activities(school_id, group_id).await;
     let mut schedules = vec![];
-    while let Some(g) = groups_query.try_next().await.unwrap() {
-        let act = shared::msgs::timetables::Schedule {
-            day_id: g.try_get("day_id").unwrap(),
-            hour: g.try_get("hour").unwrap(),
-            activity: g.try_get("activity").unwrap(),
-            locked: g.try_get("locked").unwrap()
-        };
-        schedules.push(act)
+    if let DownMsg::Timetable(TimetableDownMsgs::GetActivities(acts)) = ids{
+        let acts = acts.iter().map(|a| a.id).collect::<Vec<i32>>();
+        let mut groups_query = sqlx::query(r#"select day_id, hour, locked, activity
+                from class_timetable where activity = any($1)"#)
+            .bind(&acts)
+            .fetch(&*db);
+        while let Some(g) = groups_query.try_next().await.unwrap() {
+            let act = shared::msgs::timetables::Schedule {
+                day_id: g.try_get("day_id").unwrap(),
+                hour: g.try_get("hour").unwrap(),
+                activity: g.try_get("activity").unwrap(),
+                locked: g.try_get("locked").unwrap()
+            };
+            schedules.push(act)
+        }    
     }
     DownMsg::Timetable(TimetableDownMsgs::GetSchedules(schedules))
 }
 
-pub async fn update_schedules(school_id: i32, group_id: i32, schedules: Vec<Schedule>) -> DownMsg {
+pub async fn update_schedules(schedules: Vec<Schedule>) -> DownMsg {
     let db = POSTGRES.read().await;
-    let acts = schedules.iter().map(|s| s.activity).collect::<Vec<i32>>();
-    let mut del_schedules = sqlx::query(r#"delete from class_timetable where activity = any($1)"#)
+    let acts: Vec<i32> = schedules.iter().map(|s| s.activity).collect();
+    let _del_schedules = sqlx::query(r#"delete from class_timetable where activity = any($1)"#)
         .bind(&acts)
         .execute(&*db).await;
-    for s in schedules{
-        let mut groups_query = 
-        sqlx::query(r#"insert into class_timetable(activity, day, hour, locked) values($1, $2, $3, $4)"#)
+    for s in &schedules{
+        let mut _groups_query = 
+        sqlx::query(r#"insert into class_timetable(activity, day_id, hour, locked) values($1, $2, $3, $4)"#)
         .bind(&s.activity)
         .bind(&s.day_id)
         .bind(&s.hour)
         .bind(&s.locked)
-        .execute(&*db);
+        .execute(&*db).await;
     }
-    let mut schedules = vec![];
     DownMsg::Timetable(TimetableDownMsgs::GetSchedules(schedules))
+}
+
+pub async fn del_schedules(acts: Vec<i32>) -> DownMsg {
+    let db = POSTGRES.read().await;
+    let _del_schedules = sqlx::query(r#"delete from class_timetable where activity = any($1)"#)
+        .bind(&acts)
+        .execute(&*db).await.unwrap();
+    println!("del sch");
+    DownMsg::Timetable(TimetableDownMsgs::DelSchedules)
 }
 
 pub async fn add_activity(school_id: i32, group_id: i32, form: AddActivity) -> DownMsg {
@@ -242,11 +252,10 @@ pub async fn get_ids(school_id: i32, group_id: i32)-> Option<Vec<i32>>{
             .fetch_one(&*POSTGRES.read().await).await;
     match ids{
         Ok(id)=> {
-            println!("{:?}", id.clone());
+            //println!("{:?}", id.clone());
             id.0
         },
         Err(e) => {
-            println!("{}", e.to_string());
             return None
         }
     }

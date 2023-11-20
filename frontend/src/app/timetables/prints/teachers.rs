@@ -1,7 +1,5 @@
-use shared::msgs::{teachers, activities::FullActivity, schools::School};
-use web_sys::window;
+use shared::msgs::activities::FullActivity;
 use genpdf::*;
-use zoon::paragraph;
 
 use crate::{app::timetables::{selected_timetable_hour, schedules, activities, teachers::teachers, add_act::{classes_full_name, lecture_name}, school}, i18n};
 
@@ -118,7 +116,7 @@ fn add_row(doc:&mut genpdf::Document, t: i32){
     doc.push(table);
 }
 
-fn hour_linear(h: usize)->elements::Paragraph{
+fn _hour_linear(h: usize)->elements::Paragraph{
    create_row_title(h.to_string())
 }
 

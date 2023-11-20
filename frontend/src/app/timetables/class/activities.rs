@@ -19,6 +19,10 @@ pub fn activities_view(id: i32)->impl Element{
             .items_signal_vec(
                 activities()
                 .signal_vec_cloned()
+                .sort_by_cloned(|x,y| 
+                    teacher_short_name(x.clone()).cmp(&teacher_short_name(y.clone()))
+                    .then(x.subject.cmp(&y.subject))
+                )
                 .filter_signal_cloned(move |acts| 
                     Mutable::new(
                         acts.classes.iter()
@@ -51,7 +55,7 @@ fn act_view(act: ActCol)->impl Element{
     let del = act.del;
     Column::new()
     .s(Padding::new().top(10))
-    .s(Width::growable())
+    .s(Width::growable().min(75))
     .s(Height::growable())
     .s(RoundedCorners::all(5))
     .s(

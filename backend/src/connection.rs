@@ -4,7 +4,7 @@ use redis;
 pub mod school;
 pub mod sql;
 
-static REDISDB: Lazy<RwLock<redis::Client>> =
+pub static REDISDB: Lazy<RwLock<redis::Client>> =
     Lazy::new(|| RwLock::new(redis::Client::open("redis://127.0.0.1:6379/").unwrap()));
 
 async fn get_connection() -> redis::RedisResult<redis::Connection> {

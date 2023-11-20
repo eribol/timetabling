@@ -16,7 +16,9 @@ pub enum TimetableUpMsgs {
     Class(ClassUpMsgs),
     Teacher(TeacherUpMsgs),
     //UpdateTeacherLimitations(i32),
-    GetSchedules(i32)
+    GetSchedules(i32),
+    DelSchedules(Vec<i32>),
+    UpdateSchedules(Vec<Schedule>)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,7 +33,8 @@ pub enum TimetableDownMsgs {
     GetTeachersLimitations(Vec<TeacherLimitation>),
     GetTeachersLimitationsError,
     GetSchedules(Vec<Schedule>),
-    UpdateSchedules(Vec<Schedule>)
+    UpdateSchedules(Vec<Schedule>),
+    DelSchedules
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -46,7 +49,7 @@ pub struct Timetable {
 #[serde(crate = "serde")]
 pub struct Schedule{
     pub day_id: i32,
-    pub hour: i32,
+    pub hour: i16,
     pub activity: i32,
     pub locked: bool,
 }

@@ -1,12 +1,12 @@
 use zoon::*;
-use crate::{i18n::{t, lang, self}, app, router::Route};
+use crate::router::Route;
 
-pub fn root() -> impl Element {
+pub fn _root() -> impl Element {
     Row::new()
-    .item(left_nav())
+    .item(_left_nav())
 }
 
-fn left_nav()-> impl Element{
+fn _left_nav()-> impl Element{
     Row::new()
     .s(Align::new().left())
     .item(

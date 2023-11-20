@@ -9,9 +9,10 @@ use crate::i18n::t;
 use crate::connection::send_msg;
 use crate::elements::buttons;
 use super::class::limitations::show_lim_view;
-use super::{activities, schedules};
+use super::{TimetablePages, total_act_hours_for_classes, total_act_hours_for_teacher};
 use super::class::selected_class;
 use super::{lectures, classes, selected_timetable, teachers::{teachers, selected_teacher}};
+use crate::app::timetables::selected_page;
 
 #[static_ref]
 pub fn add_act()->&'static Mutable<bool>{
@@ -137,9 +138,6 @@ fn filter_teachers(value: String){
     }
 }
 
-pub fn change_add_act(){
-    add_act().set_neq(!add_act().get())
-}
 fn change_hour(value: String){
     act_hour().set(value)   
 }
@@ -174,15 +172,6 @@ fn add_act_row_view()->impl Element{
 }
 
 pub fn home()->impl Element{
-    let mut id = 0;
-    if let Some(i) = selected_class().get_cloned(){
-        id = i.id;
-    }
-    else{
-        if let Some(i) = selected_teacher().get_cloned(){
-            id = i;
-        }
-    }
     Column::new()
     .s(Gap::new().y(10))
     .item(
@@ -194,15 +183,14 @@ pub fn home()->impl Element{
         Row::new()
         .s(Font::new().weight(FontWeight::ExtraBold))
         .item_signal(t!("total-act-hours"))
-        .item_signal(activities()
-            .signal_vec_cloned()
-            .filter_signal_cloned(move |act| 
-                Mutable::new(
-                    act.classes.iter()
-                    .any(|c| c == &id) && !schedules().lock_ref().iter().any(|s| s.activity == act.id)
-                )
-                .signal()
-            ).len()
+        .item_signal(
+            selected_page().map(|p|{
+                match p{
+                    TimetablePages::Classes => total_act_hours_for_classes().signal_map_cloned().key_cloned(selected_class().get_cloned().unwrap().id),
+                    _ => total_act_hours_for_teacher().signal_map_cloned().key_cloned(selected_teacher().get_cloned().unwrap())
+                }
+               // _ => 
+            })
         )
     })
     

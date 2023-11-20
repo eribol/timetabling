@@ -7,8 +7,7 @@ use crate::{
 use moon::*;
 use shared::{
     msgs::{
-        classes::{ClassUpMsgs},
-        lectures::{LecturesUpMsg, LecturesDownMsg}, timetables::TimetableUpMsgs, activities::ActivityUpMsgs, users::User,
+        activities::ActivityUpMsgs, users::User,
     },
     *,
 };
@@ -20,7 +19,7 @@ pub mod teachers;
 pub mod timetables;
 
 pub async fn up_msg_handler(req: UpMsgRequest<UpMsg>) {
-    println!("{req:?}");
+    //println!("{req:?}");
     let UpMsgRequest {
         up_msg,
         cor_id,

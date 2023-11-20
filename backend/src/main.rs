@@ -1,3 +1,5 @@
+#[allow(unused)]
+#[allow(unused_mut)]
 use config::CONFIG;
 use moon::{
     actix_cors::Cors,

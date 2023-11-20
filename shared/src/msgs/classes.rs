@@ -1,7 +1,5 @@
 use moonlight::*;
 
-use super::activities::{Activity, FullActivity};
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(crate = "serde")]
 pub enum ClassUpMsgs {

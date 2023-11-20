@@ -298,12 +298,6 @@ pub fn add_lim(){
     send_msg(shared::UpMsg::Timetable(t_msg));
 }
 
-pub fn save_schedules(){
-    let form = schedules().lock_mut().to_vec();
-    //let t_msg = TimetableUpMsgs::;
-    //send_msg(shared::UpMsg::Timetable(t_msg));
-}
-
 pub fn add_lim_classes(){
     let clss = classes().lock_mut().to_vec();
     let mut form = class_limitations().lock_mut().to_vec();
