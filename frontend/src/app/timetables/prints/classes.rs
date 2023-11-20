@@ -95,7 +95,7 @@ fn add_row(doc:&mut genpdf::Document, c: i32){
         hour_row.push(par);
         row.push_element(hour_row);
         for day in ["p","s","ç","p","c","ct","p"].iter().enumerate(){
-            let sch = sch.iter().find(|s| s.day_id == (day.0+1) as i32 && s.hour == h as i32 && acts.iter().any(|a| a.id == s.activity));
+            let sch = sch.iter().find(|s| s.day_id == (day.0+1) as i32 && s.hour == h as i16 && acts.iter().any(|a| a.id == s.activity));
             match sch{
                 Some(s) => {
                     let act = acts.iter().find(|a| a.id == s.activity).unwrap();

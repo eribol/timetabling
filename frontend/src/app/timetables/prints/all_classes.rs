@@ -80,7 +80,7 @@ fn create_class_row(table: &mut TableLayout){
         let mut row = table.row();
         row.push_element(create_row_title(format!("{}{}",c.kademe, c.sube)));
         for d in 0..5{
-            let t = create_table_for_row(&c, d);
+            let t = create_table_for_row(&c, d+1);
             row.push_element(t);
         }
         row.push().expect("msg");

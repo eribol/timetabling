@@ -522,7 +522,7 @@ impl TimetableData {
                 let hours = same_day_acts
                     .iter()
                     .cloned()
-                    .find(|t| hour > 0 && t.hour == (hour - 1) as i32 || t.hour == hour as i32 + act.hour as i32);
+                    .find(|t| hour > 0 && t.hour == (hour - 1) as i16 || t.hour == hour as i16 + act.hour);
                 if hours.is_some() {
                     return true;
                 }
@@ -565,7 +565,7 @@ impl TimetableData {
         for timetable in hour..hour + act.hour as usize {
             let tt = Schedule {
                 day_id: day,
-                hour: timetable as i32,
+                hour: timetable as i16,
                 activity: act.id,
                 locked: false,
             };

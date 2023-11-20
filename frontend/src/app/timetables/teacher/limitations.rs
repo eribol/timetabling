@@ -141,7 +141,7 @@ fn placed(act: &FullActivity, hour: usize, day: usize){
                 day_id: day as i32,
                 locked: false,
                 activity: act.id.clone(),
-                hour: (hour as i16+i) as i32
+                hour: (hour as i16+i) 
             });
     };
     let acts = activities().lock_mut().to_vec();
@@ -192,7 +192,7 @@ fn hour_view(h: bool, day: TeacherLimitation, hour: usize)->impl Element{
 }
 
 fn if_schedule(schs: &[Schedule], day: i32, hour: usize)-> Option<&Schedule>{
-    let a = schs.into_iter().find(|s2| &s2.day_id == &day && s2.hour == hour as i32 
+    let a = schs.into_iter().find(|s2| &s2.day_id == &day && s2.hour == hour as i16 
         && activities()
         .lock_ref()
         .iter()

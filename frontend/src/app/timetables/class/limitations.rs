@@ -144,7 +144,7 @@ fn placed(act: &FullActivity, hour: usize, day: i32){
                 day_id: day as i32,
                 locked: false,
                 activity: act.id.clone(),
-                hour: (hour as i16+i) as i32
+                hour: hour as i16+i
         });
     }
     let acts = activities().lock_mut().to_vec();
@@ -184,7 +184,7 @@ fn hour_view(h: bool, day: ClassLimitation, hour: usize)->impl Element{
                         schedules()
                         .signal_vec_cloned()
                         .to_signal_map(move |s|{
-                            let a = s.iter().find(|s2| &s2.day_id == &d_clone.day && s2.hour == hour as i32 
+                            let a = s.iter().find(|s2| &s2.day_id == &d_clone.day && s2.hour == hour as i16 
                                 && activities()
                                 .lock_ref()
                                 .iter()
