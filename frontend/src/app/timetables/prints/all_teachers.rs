@@ -80,7 +80,7 @@ fn create_teacher_row(table: &mut TableLayout){
         let mut row = table.row();
         row.push_element(create_row_title(format!("{} {}",t.first_name, t.last_name)));
         for d in 0..5{
-            let t = create_table_for_row(&t, d);
+            let t = create_table_for_row(&t, d+1);
             row.push_element(t);
         }
         row.push().expect("msg");
