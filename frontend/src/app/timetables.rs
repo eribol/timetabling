@@ -15,7 +15,7 @@ use shared::msgs::lectures::*;
 use self::add_act::{change_act_classes, change_act_teachers};
 use self::class::selected_class;
 use self::classes::{classes_page_view, classes};
-use self::generator::fix_schedules;
+use self::teacher::limitations::tat;
 use self::teachers::{teachers, selected_teacher};
 pub mod classes;
 pub mod teacher;
@@ -282,7 +282,8 @@ pub fn create_teachers_limitations(mut lims: Vec<TeacherLimitation>){
         c_lims.sort_by(|a,b| a.day.cmp(&b.day));
         new_lims.insert(c.id, c_lims.clone());
     }
-    timetables::teachers_limitations().set(new_lims);
+    timetables::teachers_limitations().set(new_lims.clone());
+    tat().set(new_lims);
 }
 pub fn create_classes_limitations(mut lims: Vec<ClassLimitation>){
     let clss = classes::classes().lock_mut().to_vec();

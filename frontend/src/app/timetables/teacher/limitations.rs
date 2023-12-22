@@ -1,11 +1,14 @@
+use std::collections::HashMap;
+
 use shared::UpMsg;
-use shared::msgs::activities::FullActivity;
+use shared::msgs::activities::{FullActivity, Activity};
 use shared::msgs::teachers::TeacherUpMsgs;
 use shared::msgs::timetables::TimetableUpMsgs;
 use zoon::*;
 use zoon::named_color::*;
 use crate::app::timetables::add_act::{lecture_name, classes_full_name};
 use crate::app::timetables::class::limitations::{LIM_HEIGHT, LIM_WIDTH, show_lim_view};
+use crate::app::timetables::generator::data;
 use crate::app::timetables::teachers::selected_teacher;
 use crate::app::timetables::{selected_timetable_hour, teachers_limitations, create_default_lim, selected_timetable, schedules, activities};
 use crate::connection::send_msg;
@@ -20,6 +23,11 @@ use super::activities::{self, move_select};
 #[static_ref]
 pub fn teacher_limitations() -> &'static MutableVec<TeacherLimitation> {
     MutableVec::new_with_values(vec!())
+}
+
+#[static_ref]
+pub fn tat() -> &'static Mutable<HashMap<i32, Vec<TeacherLimitation>>> {
+    Mutable::new(HashMap::new())
 }
 
 pub fn get_t_l(){
@@ -211,6 +219,7 @@ fn schedule_view(act: &FullActivity)->impl Element{
     Column::new()
     .item(
         Button::new()
+        .s(Font::new().weight(FontWeight::Light))
         .label(
             lecture_name(act.clone())
         )
@@ -223,7 +232,7 @@ fn schedule_view(act: &FullActivity)->impl Element{
         Row::new()
         .s(Align::center())
         .s(Gap::new().x(5))
-        .s(Font::new().weight(FontWeight::Light))
+        .s(Font::new().weight(FontWeight::ExtraLight))
         .item(
             Button::new()
             .label("Kaldır")
@@ -276,7 +285,12 @@ fn day_hour(day_id: usize, hour: usize){
     lims[day_id].hours[hour] = !lims[day_id].hours[hour];
     teacher_limitations().lock_mut().replace_cloned(lims);
 }
-
+fn get_t_acts()->Vec<FullActivity>{
+    let teacher = selected_teacher().get_cloned().unwrap();
+    let acts = activities().lock_mut().to_vec();
+    let t_acts = acts.into_iter().filter(|a| a.teachers.iter().any(|t| t == &teacher)).collect::<Vec<FullActivity>>();
+    t_acts
+}
 fn save_changes(){
     let lims = teacher_limitations().lock_mut().to_vec();
     let group_id = selected_timetable().get();
@@ -284,4 +298,46 @@ fn save_changes(){
     let t_msg = TimetableUpMsgs::Teacher(c_msg);
     let msg = UpMsg::Timetable(t_msg);
     send_msg(msg);
+    change_tat(lims);
+}
+fn change_tat(t_lim: Vec<TeacherLimitation>){
+    use zoon::println;
+    let teacher = selected_teacher().get_cloned().unwrap();
+    let schdls = schedules().lock_mut().to_vec();
+    let t_acts = get_t_acts();
+    let mut dt = data().get_cloned();
+    let mut tat2 = tat().lock_mut();
+    let tat2 = tat2.get_mut(&teacher).unwrap();
+    println!("geld");
+    for t_l in t_lim{
+        for h in t_l.hours.iter().enumerate(){
+            if !h.1{
+                
+                let t_sch = schdls.clone().into_iter()
+                .enumerate()
+                .find(|sc| sc.1.day_id == t_l.day && sc.1.hour as usize == h.0 && t_acts.iter().any(|c_a| c_a.id == sc.1.activity));
+                
+                if let Some(ts) = t_sch{
+                    println!("geldi");
+                    let act = t_acts.iter().find(|a| a.id == ts.1.activity).unwrap();
+                    let act = Activity{
+                        id: act.id,
+                        classes: act.classes.clone(),
+                        teachers: act.teachers.clone(),
+                        subject: act.subject,
+                        hour: act.hour    
+                    };
+                    dt.delete_activity(&act);
+                    if let Some(tt) = tat2.iter_mut().find(|tt| tt.day == t_l.day){
+                        println!("geldii");
+                        tt.hours[h.0] = false;
+                    }
+                }
+            }
+        }
+    }
+    println!("g");
+    tat().replace(*dt.tat);
+    println!("g2");
+    schedules().lock_mut().replace_cloned(*dt.timetables);
 }

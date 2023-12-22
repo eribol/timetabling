@@ -8,13 +8,13 @@ use shared::msgs::teachers::{TeacherLimitation, Teacher};
 use shared::msgs::{timetables::*, activities::Activity};
 use zoon::*;
 use zoon::named_color::{BLUE_3, BLUE_1};
-use crate::app::timetables::classes::classes;
+use crate::app::timetables::teacher::limitations::tat;
 use crate::connection::send_msg;
 use crate::i18n::t;
 use crate::elements::{text_inputs, buttons};
 
 
-use super::teachers::teachers;
+
 use super::{schedules, activities, teachers_limitations, classes_limitations, prints};
 
 pub fn home() -> impl Element {
@@ -176,7 +176,7 @@ fn teachers_acts()->&'static Mutable<HashMap<i32, Vec<FullActivity>>>{
     Mutable::new(HashMap::new())
 }
 #[static_ref]
-fn data()->&'static Mutable<TimetableData>{
+pub fn data()->&'static Mutable<TimetableData>{
     use super::*;
     Mutable::new(create_data())
 }
@@ -204,10 +204,9 @@ fn set_data(){
     data().set(create_data());
 }
 fn create_data()->TimetableData{
-    use zoon::println;
-    println!("data");
     create_acts_data();
-    let tat = teachers_limitations().get_cloned();
+    let clean_tat = teachers_limitations().get_cloned();
+    let tat = tat().get_cloned();
     let cat = classes_limitations().get_cloned();
     let acts = activities().lock_mut().to_vec().into_iter().map(|a| Activity{
         id: a.id,
@@ -220,7 +219,7 @@ fn create_data()->TimetableData{
         tat: Box::new(tat.clone()),
         cat: Box::new(cat.clone()),
         clean_cat: Box::new(cat),
-        clean_tat: Box::new(tat),
+        clean_tat: Box::new(clean_tat),
         acts,
         teachers_acts: teachers_acts().get_cloned(),
         neighbour_acts: create_ng(),
@@ -228,82 +227,9 @@ fn create_data()->TimetableData{
         teachers: super::teachers::teachers().lock_mut().to_vec(),
         timetables: Box::new(schedules().lock_mut().to_vec())
     };
-    is_data_ready().set(true);
     dt
 }
-#[static_ref]
-fn is_data_ready()->&'static Mutable<bool>{
-    Mutable::new(false)
-}
-pub fn fix_schedules(){
-    if !is_data_ready().get(){
-        data();
-        //is_generate().set(!is_generate().get());
-        return ();
-    }
-    use zoon::println;
-    println!("fix");
-    let clss = classes().lock_mut().to_vec();
-    let c_acts = activities().lock_mut().to_vec();
-    let schdls = schedules().lock_mut().to_vec();
-    for c in &clss{
-        let c_acts: Vec<&FullActivity> = c_acts.iter().filter(|a| a.classes.iter().any(|c2| c2== &c.id)).collect();
-        let c_lim = classes_limitations().lock_mut();
-        let c_lim = c_lim.get(&c.id).unwrap();
-        for c_l in c_lim{
-            for h in c_l.hours.iter().enumerate(){
-                if !h.1{
-                    let c_sch = schdls.clone().into_iter()
-                    .enumerate()
-                    .find(|sc| sc.1.day_id == c_l.day && sc.1.hour as usize == h.0 && c_acts.iter().any(|c_a| c_a.id == sc.1.activity));
-                    if let Some(cs) = c_sch{
-                        let mut dt = data().get_cloned();
-                        let acts = dt.acts.clone();
-                        let act = acts.iter().find(|a| a.id == cs.1.activity).unwrap();
-                        dt.delete_activity(act);
-                        //*dt.timetables = schdls.clone();
-                        data().set(dt);
-                    }
-                }
-            }
-        }
-    }
-    let tchrs = teachers().lock_mut().to_vec();
-    let t_acts = activities().lock_mut().to_vec();
-    for t in &tchrs{
-        let t_acts: Vec<&FullActivity> = t_acts.iter().filter(|a| a.teachers.iter().any(|c2| c2== &t.id)).collect();
-        let t_lim = teachers_limitations().lock_mut();
-        let t_lim = t_lim.get(&t.id).unwrap();
-        for t_l in t_lim{
-            for h in t_l.hours.iter().enumerate(){
-                if !h.1{
-                    let t_sch = schdls.clone().into_iter()
-                    .enumerate()
-                    .find(|sc| sc.1.day_id == t_l.day && sc.1.hour as usize == h.0 && t_acts.iter().any(|c_a| c_a.id == sc.1.activity));
-                    if let Some(ts) = t_sch{
-                        let mut dt = data().get_cloned();
-                        let acts = dt.acts.clone();
-                        let mut tat = dt.tat.clone().get(&t.id).unwrap().clone();
-                        tat[t_l.day as usize].hours[h.0] = false;
-                        let act = acts.iter().find(|a| a.id == ts.1.activity).unwrap();
-                        dt.delete_activity(act);
-                        dt.tat.insert(t.id, tat.clone());
-                        data().set(dt);
-                    }
-                }
-                else{
-                    let mut dt = data().get_cloned();
-                    let mut tat = dt.tat.clone().get(&t.id).unwrap().clone();
-                    tat[t_l.day as usize].hours[h.0] = true;
-                    dt.tat.insert(t.id, tat.clone());
-                    data().set(dt);
-                }
-            }
-        }    
-    }
-    let s = data().get_cloned().timetables;
-    schedules().lock_mut().replace_cloned(*s);
-}
+
 fn create_acts_data(){
     let activities = activities().lock_mut().to_vec();
     let acts = activities.clone();
@@ -325,7 +251,7 @@ fn generate(){
         depth: 8,
         depth2: 6
     };
-    fix_schedules();
+    create_data();
     if !is_generate().get(){
         Task::start(async move{
             Timer::sleep(1000).await;
@@ -338,6 +264,7 @@ fn generate(){
                 }
                 if t_data.generate(&params) && !is_generate().get(){
                     schedules().lock_mut().replace_cloned(*t_data.timetables.clone());
+                    tat().set(*t_data.tat.clone());
                     data().set(t_data);
                 }
                 else{
@@ -587,7 +514,7 @@ impl TimetableData {
             self.timetables.push(tt);
         }
     }
-    fn delete_activity(&mut self, act: &Activity) {
+    pub fn delete_activity(&mut self, act: &Activity) {
         let tt: Vec<(usize, Schedule)> = self
             .timetables
             .iter()

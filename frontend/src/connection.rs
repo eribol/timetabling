@@ -3,7 +3,7 @@ use crate::{*,
         set_page_id, 
         timetables::{
             self, 
-            teachers::{teachers, selected_teacher}}, Pages
+            teachers::{teachers, selected_teacher}, teacher::limitations::tat}, Pages
         }
     };
 use shared::{msgs::{timetables::TimetableDownMsgs, activities::ActivityDownMsgs, classes::ClassDownMsgs, teachers::TeacherDownMsgs}, DownMsg, UpMsg};
@@ -53,7 +53,8 @@ pub fn connection() -> &'static Connection<UpMsg, DownMsg> {
                     timetables::schedules().lock_mut().replace_cloned(schedules);
                 }
                 TimetableDownMsgs::GetTeachersLimitations(t_lims) => {
-                    create_teachers_limitations(t_lims);
+                    let lims = create_teachers_limitations(t_lims.clone());
+                    //tat().lock_mut().replace_cloned(t_lims);
                     //println!("geldi lim");
                 }
                 TimetableDownMsgs::Class(c_msg) => {
