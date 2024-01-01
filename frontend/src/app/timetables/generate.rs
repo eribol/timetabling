@@ -1,5 +1,5 @@
 use crate::app::timetables::*;
-use shared::msgs::{timetables::*, activities::Activity};
+use shared::msgs::activities::Activity;
 use zoon::static_ref;
 
 #[static_ref]

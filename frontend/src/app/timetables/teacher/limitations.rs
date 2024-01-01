@@ -8,9 +8,9 @@ use zoon::*;
 use zoon::named_color::*;
 use crate::app::timetables::add_act::{lecture_name, classes_full_name};
 use crate::app::timetables::class::limitations::{LIM_HEIGHT, LIM_WIDTH, show_lim_view};
-use crate::app::timetables::generator::data;
+use crate::app::timetables::generator::{data, create_data};
 use crate::app::timetables::teachers::selected_teacher;
-use crate::app::timetables::{selected_timetable_hour, teachers_limitations, create_default_lim, selected_timetable, schedules, activities};
+use crate::app::timetables::{selected_timetable_hour, teachers_limitations, selected_timetable, schedules, activities};
 use crate::connection::send_msg;
 use crate::elements::buttons;
 use crate::i18n::t;
@@ -284,6 +284,8 @@ fn day_hour(day_id: usize, hour: usize){
     let mut lims = teacher_limitations().lock_mut().to_vec();
     lims[day_id].hours[hour] = !lims[day_id].hours[hour];
     teacher_limitations().lock_mut().replace_cloned(lims);
+    //data().lock_mut().clean_tat = lims;
+    //teachers_limitations().lock_mut().replace_cloned(lims);
 }
 fn get_t_acts()->Vec<FullActivity>{
     let teacher = selected_teacher().get_cloned().unwrap();
@@ -300,44 +302,27 @@ fn save_changes(){
     send_msg(msg);
     change_tat(lims);
 }
-fn change_tat(t_lim: Vec<TeacherLimitation>){
-    use zoon::println;
+pub fn change_tat(t_lim: Vec<TeacherLimitation>){
     let teacher = selected_teacher().get_cloned().unwrap();
-    let schdls = schedules().lock_mut().to_vec();
+    zoon::println!("t_lim={:?}", &t_lim);
+    let mut schdls = schedules().lock_mut().to_vec();
+    //zoon::println!("b");
     let t_acts = get_t_acts();
-    let mut dt = data().get_cloned();
-    let mut tat2 = tat().lock_mut();
+    let mut tat2 = tat().lock_mut().clone();
     let tat2 = tat2.get_mut(&teacher).unwrap();
-    println!("geld");
-    for t_l in t_lim{
+    for t_l in &t_lim{
         for h in t_l.hours.iter().enumerate(){
             if !h.1{
+                let t_sch = schdls.retain(|sc| !(sc.day_id == t_l.day && sc.hour as usize == h.0 && t_acts.iter().any(|c_a| c_a.id == sc.activity)));
                 
-                let t_sch = schdls.clone().into_iter()
-                .enumerate()
-                .find(|sc| sc.1.day_id == t_l.day && sc.1.hour as usize == h.0 && t_acts.iter().any(|c_a| c_a.id == sc.1.activity));
-                
-                if let Some(ts) = t_sch{
-                    println!("geldi");
-                    let act = t_acts.iter().find(|a| a.id == ts.1.activity).unwrap();
-                    let act = Activity{
-                        id: act.id,
-                        classes: act.classes.clone(),
-                        teachers: act.teachers.clone(),
-                        subject: act.subject,
-                        hour: act.hour    
-                    };
-                    dt.delete_activity(&act);
-                    if let Some(tt) = tat2.iter_mut().find(|tt| tt.day == t_l.day){
-                        println!("geldii");
-                        tt.hours[h.0] = false;
-                    }
+                if let Some(tt) = tat2.iter_mut().find(|tt| tt.day == t_l.day){
+                    tt.hours[h.0] = false;
                 }
             }
         }
     }
-    println!("g");
-    tat().replace(*dt.tat);
-    println!("g2");
-    schedules().lock_mut().replace_cloned(*dt.timetables);
+    tat().lock_mut().insert(teacher, tat2.clone());
+    schedules().lock_mut().replace_cloned(schdls);
+    teachers_limitations().lock_mut().insert(teacher, t_lim);
+    data().set(create_data());
 }

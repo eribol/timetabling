@@ -1,12 +1,12 @@
 use shared::msgs::classes::*;
 use shared::DownMsg;
-use shared::msgs::timetables::{TimetableUpMsgs, TimetableDownMsgs};
+use shared::msgs::timetables::TimetableDownMsgs;
 use sqlx::Row;
 
 use super::auth::POSTGRES;
 use moon::tokio_stream::StreamExt;
 
-pub async fn get_class_limitations(class_id: i32) -> DownMsg {
+pub async fn _get_class_limitations(class_id: i32) -> DownMsg {
     let db = POSTGRES.read().await;
     let mut row = sqlx::query(
         r#"select * from class_available where class_id = $1"#)

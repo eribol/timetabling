@@ -24,7 +24,7 @@ pub async fn login(email: String, password: String) -> sqlx::Result<LoginUser> {
                 println!("bulundu");
                 Ok(u)
             } else {
-                println!("bulunmadı");
+                //println!("bulunmadı");
                 Err(sqlx::Error::RowNotFound)
             }
         }

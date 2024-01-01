@@ -1,11 +1,12 @@
-use std::ops::{Deref, DerefMut};
+use std::collections::HashMap;
 
-use shared::msgs::activities::FullActivity;
-use zoon::{eprintln, *};
+use shared::msgs::activities::{FullActivity, Activity};
+use zoon::*;
 use zoon::named_color::*;
 use crate::app::timetables::add_act::{lecture_name, teachers_full_name};
 use crate::app::timetables::classes::classes;
-use crate::app::timetables::{schedules, activities};
+use crate::app::timetables::generator::{data, create_data};
+use crate::app::timetables::{schedules, activities, classes_limitations};
 use crate::connection::*;
 use crate::i18n::t;
 use crate::elements::*;
@@ -19,6 +20,10 @@ pub const LIM_WIDTH: u32 = 120;
 #[static_ref]
 pub fn class_limitations() -> &'static MutableVec<ClassLimitation> {
     MutableVec::new_with_values(vec![])
+}
+#[static_ref]
+pub fn cat() -> &'static Mutable<HashMap<i32, Vec<ClassLimitation>>> {
+    Mutable::new(HashMap::new())
 }
 pub fn create_class_lims(){
     let class_lim = super::super::classes_limitations().lock_mut();
@@ -293,9 +298,10 @@ fn all_hours(hour: usize){
 pub fn add_lim(){
     let form = class_limitations().lock_mut().to_vec();
     let class_id = selected_class().get_cloned().unwrap().id;
-    let msg = ClassUpMsgs::UpdateLimitations((class_id, form));
+    let msg = ClassUpMsgs::UpdateLimitations((class_id, form.clone()));
     let t_msg = TimetableUpMsgs::Class(msg);
     send_msg(shared::UpMsg::Timetable(t_msg));
+    change_cat(form);
 }
 
 pub fn add_lim_classes(){
@@ -307,4 +313,49 @@ pub fn add_lim_classes(){
         let t_msg = TimetableUpMsgs::Class(c_msg);
         send_msg(shared::UpMsg::Timetable(t_msg));
     }
+}
+
+pub fn change_cat(c_lim: Vec<ClassLimitation>){
+    let class = selected_class().get_cloned().unwrap();
+    //zoon::println!("a");
+    let schdls = schedules().lock_mut().to_vec();
+    //zoon::println!("b");
+    let c_acts = activities().lock_mut().to_vec();
+    let c_acts: Vec<&FullActivity> = c_acts.iter().filter(|a| a.classes.iter().any(|ca| ca==&class.id)).collect();
+    //zoon::println!("c");
+    let mut dt = data().get_cloned();
+    let mut cat2 = cat().lock_mut().clone();
+    let cat2 = cat2.get_mut(&class.id).unwrap();
+    for t_l in &c_lim{
+        for h in t_l.hours.iter().enumerate(){
+            if !h.1{
+                
+                let t_sch = schdls.iter()
+                .enumerate()
+                .find(|sc| sc.1.day_id == t_l.day && sc.1.hour as usize == h.0 && c_acts.iter().any(|c_a| c_a.id == sc.1.activity));
+                
+                if let Some(ts) = t_sch{
+                    
+                    let act = c_acts.iter().find(|a| a.id == ts.1.activity).unwrap();
+                    
+                    let act = Activity{
+                        id: act.id,
+                        classes: act.classes.clone(),
+                        teachers: act.teachers.clone(),
+                        subject: act.subject,
+                        hour: act.hour    
+                    };
+                    
+                    dt.delete_activity(&act);
+                    if let Some(tt) = cat2.iter_mut().find(|tt| tt.day == t_l.day){
+                        tt.hours[h.0] = false;
+                    }
+                }
+            }
+        }
+    }
+    cat().set(*dt.cat.clone());
+    schedules().lock_mut().replace_cloned(*dt.timetables.clone());
+    classes_limitations().lock_mut().insert(class.id, c_lim);
+    create_data();
 }

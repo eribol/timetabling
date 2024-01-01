@@ -255,7 +255,7 @@ pub async fn get_ids(school_id: i32, group_id: i32)-> Option<Vec<i32>>{
             //println!("{:?}", id.clone());
             id.0
         },
-        Err(e) => {
+        Err(_e) => {
             return None
         }
     }

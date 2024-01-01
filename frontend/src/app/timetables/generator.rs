@@ -15,6 +15,7 @@ use crate::elements::{text_inputs, buttons};
 
 
 
+use super::class::limitations::cat;
 use super::{schedules, activities, teachers_limitations, classes_limitations, prints};
 
 pub fn home() -> impl Element {
@@ -182,9 +183,8 @@ pub fn data()->&'static Mutable<TimetableData>{
 }
 fn save_schedules(){
     let schedules = schedules().lock_mut().to_vec();
-    let acts = activities().lock_mut().to_vec();
-    let acts = acts.iter().filter(|a| !schedules.iter().any(|s| s.activity == a.id)).map(|a| a.id).collect::<Vec<i32>>();
-    let del_msg = TimetableUpMsgs::DelSchedules(acts);
+    //let acts = activities().lock_mut().to_vec();
+    //let acts = acts.iter().filter(|a| !schedules.iter().any(|s| s.activity == a.id)).map(|a| a.id).collect::<Vec<i32>>();
     let update_msg = TimetableUpMsgs::UpdateSchedules(schedules);
     //send_msg(shared::UpMsg::Timetable(del_msg));
     send_msg(shared::UpMsg::Timetable(update_msg));
@@ -195,19 +195,20 @@ fn is_generate()->&'static Mutable<bool>{
 }
 
 fn set_data(){
-    let tat = data().get_cloned().clean_tat;
-    let cat = data().get_cloned().clean_cat;
-    teachers_limitations().set(*tat);
-    classes_limitations().set(*cat);
+    //let tat = data().get_cloned().clean_tat;
+    //let cat = data().get_cloned().clean_cat;
+    tat().set(*data().get_cloned().clean_tat);
+    cat().set(*data().get_cloned().clean_cat);
     schedules().lock_mut().replace_cloned(vec![]);
     //total_hour().set(0);
     data().set(create_data());
 }
-fn create_data()->TimetableData{
+pub fn create_data()->TimetableData{
     create_acts_data();
     let clean_tat = teachers_limitations().get_cloned();
     let tat = tat().get_cloned();
-    let cat = classes_limitations().get_cloned();
+    let clean_cat = classes_limitations().get_cloned();
+    let cat = cat().get_cloned();
     let acts = activities().lock_mut().to_vec().into_iter().map(|a| Activity{
         id: a.id,
         subject: a.subject,
@@ -218,7 +219,7 @@ fn create_data()->TimetableData{
     let dt = TimetableData{
         tat: Box::new(tat.clone()),
         cat: Box::new(cat.clone()),
-        clean_cat: Box::new(cat),
+        clean_cat: Box::new(clean_cat),
         clean_tat: Box::new(clean_tat),
         acts,
         teachers_acts: teachers_acts().get_cloned(),
@@ -251,12 +252,15 @@ fn generate(){
         depth: 8,
         depth2: 6
     };
+   //zoon::println!("{:?}", data().lock_mut().clean_tat.get(&2263));
     create_data();
     if !is_generate().get(){
         Task::start(async move{
             Timer::sleep(1000).await;
+            //zoon::println!("tat: {:?}", data().get_cloned().tat);
             loop{
                 let mut t_data = data().clone().get_cloned();
+                
                 let len = t_data.timetables.len();
                 if len == total_hour().get(){
                     is_generate().set(true);
@@ -265,7 +269,9 @@ fn generate(){
                 if t_data.generate(&params) && !is_generate().get(){
                     schedules().lock_mut().replace_cloned(*t_data.timetables.clone());
                     tat().set(*t_data.tat.clone());
+                    cat().set(*t_data.cat.clone());
                     data().set(t_data);
+                    //zoon::println!("{:?}", data().get_cloned().tat.get(&1));
                 }
                 else{
                     break
@@ -364,7 +370,6 @@ impl TimetableData {
         }
         //
         let act = &acts[0];
-        //println!("{act:?}");
         let available = self.find_timeslot(act, params);
         match available {
             Some(slots) => {
@@ -418,6 +423,7 @@ impl TimetableData {
         if self.tat.len() == 0 {
             return None;
         }
+        
         days.shuffle(&mut thread_rng());
         for day in days {
             for hour in 0..self.tat.get(&act.teachers[0]).unwrap()[0].hours.len() {
@@ -474,9 +480,11 @@ impl TimetableData {
     }
     fn teachers_available(&self, act: &Activity, hour: usize, day: i32) -> bool {
         let mut teachers_availables = vec![];
+        
         for teacher in &act.teachers {
             let teacher = self.tat.get(teacher);
             if let Some(t) = teacher {
+                //zoon::println!("{:?}", &t);
                 for t2 in t {
                     if t2.day == day{
                         teachers_availables.push(t2);

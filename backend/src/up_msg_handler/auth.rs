@@ -14,7 +14,7 @@ pub static POSTGRES: Lazy<RwLock<PgPool>> = Lazy::new(|| {
 
 static _REDISDB: Lazy<RwLock<redis::Client>> =
     Lazy::new(|| RwLock::new(redis::Client::open("redis://127.0.0.1:6379/").unwrap()));
-pub async fn get_user<'a, U: Deserialize<'a> + redis::FromRedisValue>(
+pub async fn _get_user<'a, U: Deserialize<'a> + redis::FromRedisValue>(
     auth: &'a str,
 ) -> redis::RedisResult<U> {
     let mut con = REDISDB
@@ -51,10 +51,10 @@ pub async fn _del_user(id: i32, auth: String) -> redis::RedisResult<()> {
     Ok(())
 }
 
-pub async fn auth(auth_token: Option<AuthToken>) -> Option<i32> {
+pub async fn _auth(auth_token: Option<AuthToken>) -> Option<i32> {
     match auth_token {
         Some(auth) => {
-            let user_id: redis::RedisResult<i32> = get_user(&auth.into_string()).await;
+            let user_id: redis::RedisResult<i32> = _get_user(&auth.into_string()).await;
             match user_id {
                 Ok(id) => Some(id),
                 Err(_e) => None,

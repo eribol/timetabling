@@ -13,6 +13,7 @@ use shared::msgs::lectures::*;
 
 
 use self::add_act::{change_act_classes, change_act_teachers};
+use self::class::limitations::cat;
 use self::class::selected_class;
 use self::classes::{classes_page_view, classes};
 use self::teacher::limitations::tat;
@@ -314,7 +315,8 @@ pub fn create_classes_limitations(mut lims: Vec<ClassLimitation>){
         let c_lims = lims.clone().into_iter().filter(|l| l.class_id == c.id.clone()).collect::<Vec<ClassLimitation>>();
         new_lims.insert(c.id, c_lims.clone());
     }
-    timetables::classes_limitations().set(new_lims);
+    timetables::classes_limitations().set(new_lims.clone());
+    cat().replace(new_lims);
 }
 
 fn create_default_lim(class_id: i32)-> Vec<ClassLimitation>{
