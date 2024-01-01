@@ -229,7 +229,7 @@ fn lectures_view()->impl Element{
                 .s(Background::new().color(GRAY_3))
                 .s(Borders::all(Border::new().width(2).solid().color(GRAY_1)))
                 .item(
-                    Button::new().label(format!("{}({})", &l.name, &l.kademe))
+                    Button::new().label(format!("{}", &l.name))
                 ).item(
                         RawHtmlEl::new("i")
                         .style("cursor", "pointer")
@@ -445,7 +445,7 @@ pub fn lectures_modal_view(id: &str) -> impl zoon::Element {
             .map(|lecture|{
                 Button::new()
                 .label(
-                    format!("{}({})", &lecture.name, &lecture.kademe)
+                    format!("{}", &lecture.name)
                 )
                 .s(Height::exact(15))
                 .on_click(move ||{

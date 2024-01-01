@@ -1,7 +1,5 @@
 use moonlight::*;
-use std::collections::{HashMap, HashSet};
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use std::collections::HashMap;
 
 
 use super::{activities::{FullActivity, Activity}, classes::{ClassLimitation, ClassUpMsgs, ClassDownMsgs}, teachers::{TeacherLimitation, TeacherUpMsgs, TeacherDownMsgs}};

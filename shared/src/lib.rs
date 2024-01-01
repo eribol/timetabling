@@ -4,7 +4,6 @@ use msgs::{
     teachers::*, 
     lectures::*, 
     timetables::*,
-    schools::*,
     users::*, activities::{ActivityUpMsgs, ActivityDownMsgs},
 };
 pub mod msgs;

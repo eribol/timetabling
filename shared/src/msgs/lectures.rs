@@ -18,7 +18,7 @@ pub enum LecturesDownMsg{
 #[serde(crate = "serde")]
 pub struct AddLecture {
     pub name: String,
-    pub kademe: String,
+    //pub kademe: String,
     pub short_name: String,
 }
 
@@ -27,6 +27,6 @@ pub struct AddLecture {
 pub struct Lecture {
     pub id: i32,
     pub name: String,
-    pub kademe: String,
+    //pub kademe: String,
     pub short_name: String,
 }
