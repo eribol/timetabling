@@ -314,48 +314,28 @@ pub fn add_lim_classes(){
         send_msg(shared::UpMsg::Timetable(t_msg));
     }
 }
-
 pub fn change_cat(c_lim: Vec<ClassLimitation>){
     let class = selected_class().get_cloned().unwrap();
-    //zoon::println!("a");
-    let schdls = schedules().lock_mut().to_vec();
+    
+    let mut schdls = schedules().lock_mut().to_vec();
     //zoon::println!("b");
     let c_acts = activities().lock_mut().to_vec();
-    let c_acts: Vec<&FullActivity> = c_acts.iter().filter(|a| a.classes.iter().any(|ca| ca==&class.id)).collect();
-    //zoon::println!("c");
-    let mut dt = data().get_cloned();
+    let c_acts: Vec<&FullActivity> = c_acts.iter().filter(|a| a.classes.iter().any(|c| c==&class.id)).collect();
     let mut cat2 = cat().lock_mut().clone();
     let cat2 = cat2.get_mut(&class.id).unwrap();
     for t_l in &c_lim{
         for h in t_l.hours.iter().enumerate(){
             if !h.1{
+                let t_sch = schdls.retain(|sc| !(sc.day_id == t_l.day && sc.hour as usize == h.0 && c_acts.iter().any(|c_a| c_a.id == sc.activity)));
                 
-                let t_sch = schdls.iter()
-                .enumerate()
-                .find(|sc| sc.1.day_id == t_l.day && sc.1.hour as usize == h.0 && c_acts.iter().any(|c_a| c_a.id == sc.1.activity));
-                
-                if let Some(ts) = t_sch{
-                    
-                    let act = c_acts.iter().find(|a| a.id == ts.1.activity).unwrap();
-                    
-                    let act = Activity{
-                        id: act.id,
-                        classes: act.classes.clone(),
-                        teachers: act.teachers.clone(),
-                        subject: act.subject,
-                        hour: act.hour    
-                    };
-                    
-                    dt.delete_activity(&act);
-                    if let Some(tt) = cat2.iter_mut().find(|tt| tt.day == t_l.day){
-                        tt.hours[h.0] = false;
-                    }
+                if let Some(tt) = cat2.iter_mut().find(|tt| tt.day == t_l.day){
+                    tt.hours[h.0] = false;
                 }
             }
         }
     }
-    cat().set(*dt.cat.clone());
-    schedules().lock_mut().replace_cloned(*dt.timetables.clone());
+    cat().lock_mut().insert(class.id, cat2.clone());
+    schedules().lock_mut().replace_cloned(schdls);
     classes_limitations().lock_mut().insert(class.id, c_lim);
-    create_data();
+    data().set(create_data());
 }
