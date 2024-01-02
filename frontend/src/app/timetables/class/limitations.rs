@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use shared::msgs::activities::{FullActivity, Activity};
+use shared::msgs::activities::FullActivity;
 use zoon::*;
 use zoon::named_color::*;
 use crate::app::timetables::add_act::{lecture_name, teachers_full_name};

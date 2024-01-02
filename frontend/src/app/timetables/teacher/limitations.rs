@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use shared::UpMsg;
-use shared::msgs::activities::{FullActivity, Activity};
+use shared::msgs::activities::FullActivity;
 use shared::msgs::teachers::TeacherUpMsgs;
 use shared::msgs::timetables::TimetableUpMsgs;
 use zoon::*;
@@ -313,8 +313,7 @@ pub fn change_tat(t_lim: Vec<TeacherLimitation>){
     for t_l in &t_lim{
         for h in t_l.hours.iter().enumerate(){
             if !h.1{
-                let t_sch = schdls.retain(|sc| !(sc.day_id == t_l.day && sc.hour as usize == h.0 && t_acts.iter().any(|c_a| c_a.id == sc.activity)));
-                
+                schdls.retain(|sc| !(sc.day_id == t_l.day && sc.hour as usize == h.0 && t_acts.iter().any(|c_a| c_a.id == sc.activity)));
                 if let Some(tt) = tat2.iter_mut().find(|tt| tt.day == t_l.day){
                     tt.hours[h.0] = false;
                 }

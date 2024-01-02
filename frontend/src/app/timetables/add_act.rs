@@ -20,24 +20,13 @@ pub fn add_act()->&'static Mutable<bool>{
 }
 
 #[static_ref]
-fn teachers_modal()->&'static Mutable<bool>{
-    Mutable::new(false)
-}
-#[static_ref]
-fn classes_modal()->&'static Mutable<bool>{
-    Mutable::new(false)
-}
-#[static_ref]
-fn lecture_modal()->&'static Mutable<bool>{
-    Mutable::new(false)
-}
-#[static_ref]
 fn selected_lecture()->&'static Mutable<Option<Lecture>>{
     Mutable::new(None)
 }
 #[static_ref]
 fn filtered_lectures()->&'static MutableVec<Lecture>{
-    MutableVec::new_with_values(vec![])
+    let lecs = lectures().lock_mut().to_vec();
+    MutableVec::new_with_values(lecs)
 }
 #[static_ref]
 fn act_hour()->&'static Mutable<String>{
@@ -45,11 +34,13 @@ fn act_hour()->&'static Mutable<String>{
 }
 #[static_ref]
 fn filtered_teachers()->&'static MutableVec<Teacher>{
-    MutableVec::new_with_values(vec![])
+    let teachers = teachers().lock_mut().to_vec();
+    MutableVec::new_with_values(teachers)
 }
 #[static_ref]
 fn filtered_classes()->&'static MutableVec<Class>{
-    MutableVec::new_with_values(vec![])
+    let classes = classes().lock_mut().to_vec();
+    MutableVec::new_with_values(classes)
 }
 #[static_ref]
 fn act_classes()->&'static MutableVec<Class>{
@@ -63,10 +54,7 @@ pub fn change_act_classes(){
         act_classes().lock_mut().replace_cloned(vec![cls.clone()])
     }
 }
-#[static_ref]
-fn classes_len_signal()->&'static Mutable<bool>{
-    Mutable::new(false)
-}
+
 #[static_ref]
 fn act_teachers()->&'static MutableVec<Teacher>{
     MutableVec::new_with_values(vec![])
@@ -79,27 +67,23 @@ pub fn change_act_teachers(){
         act_teachers().lock_mut().replace_cloned(vec![teacher.clone()])
     }
 }
-#[static_ref]
-fn teachers_len_signal()->&'static Mutable<bool>{
-    Mutable::new(false)
-}
 
 fn filter_lectures(value: String){
-    if value.is_empty(){
-        lecture_modal().set(false);
-    }
-    else{
-        lecture_modal().set(true);
-        let lects = lectures().lock_mut().to_vec();
-        let f_lects = lects.into_iter().filter(|lec| lec.name.to_uppercase().contains(&value.to_uppercase())).collect::<Vec<Lecture>>();
-        filtered_lectures().lock_mut().replace_cloned(f_lects)
-    }
-    
+        filtered_lectures()
+        .lock_mut()
+        .replace_cloned(
+            lectures()
+            .lock_mut()
+            //.to_vec()
+            .iter()
+            .filter(|lec| 
+                lec.name.to_uppercase().contains(&value.to_uppercase())
+            ).map(|c| c.clone()).collect()
+        )
 }
 
 fn filter_classes(value: String){
-    if value.len() > 0{
-        classes_modal().set(true);
+    
         filtered_classes()
         .lock_mut()
         .replace_cloned(
@@ -111,14 +95,10 @@ fn filter_classes(value: String){
                 class.label().to_uppercase().contains(&value.to_uppercase())
             ).map(|c| c.clone()).collect()
         )
-    }
-    else{
-        classes_modal().set(false)
-    }
+
 }
 fn filter_teachers(value: String){
-    if value.len() > 0{
-        teachers_modal().set(true);
+    //if value.len() > 0{
         filtered_teachers()
         .lock_mut()
         .replace_cloned(
@@ -132,10 +112,6 @@ fn filter_teachers(value: String){
             }
             ).collect()
         )
-    }
-    else{
-        teachers_modal().set(false)
-    }
 }
 
 fn change_hour(value: String){
@@ -153,10 +129,9 @@ fn add_act_view()->impl Element{
 fn add_act_col_view()->impl Element{
     Column::new()
     .s(Gap::new().y(10))
-    .item(lectures_view())
-    .item(
-        activity_classes()
-    ).item(activity_teachers())
+    .item(activity_teachers())
+    .item(activity_classes())
+    .item(activity_lecture())
     .item(hour_view())
 }
 
@@ -164,10 +139,9 @@ fn add_act_row_view()->impl Element{
     Row::new()
     .s(Gap::new().x(10))
     .s(Width::fill())
-    .item(lectures_view())
-    .item(
-        activity_classes()
-    ).item(activity_teachers())
+    .item(activity_teachers())
+    .item(activity_classes())
+    .item(activity_lecture())
     .item(hour_view())
 }
 
@@ -206,53 +180,6 @@ fn alt_buttons()->impl Element{
     )
 }
 
-fn lectures_view()->impl Element{
-    let a = Mutable::new(false);
-    Column::new()
-    .s(Borders::all_signal(
-        a.signal().map_bool(|| Border::new().width(1).color(BLUE_2).solid(), || Border::new().width(1).color(BLUE_1).solid())
-    ))
-    .s(RoundedCorners::new().bottom(2).top(2))
-    .item(
-        Label::new().label_signal(t!("lecture"))
-    ).item(
-        Label::new().s(Font::new().weight(FontWeight::ExtraLight)).label_signal(t!("select-lecture"))
-    )
-    .item_signal(
-        selected_lecture().signal_ref(|lec|
-            match &lec{
-                Some(l) => Row::new()
-                .s(Align::new().left())
-                .s(Padding::new().left(3).right(3))
-                .s(Gap::new().x(10))
-                .s(RoundedCorners::all(50))
-                .s(Background::new().color(GRAY_3))
-                .s(Borders::all(Border::new().width(2).solid().color(GRAY_1)))
-                .item(
-                    Button::new().label(format!("{}", &l.name))
-                ).item(
-                        RawHtmlEl::new("i")
-                        .style("cursor", "pointer")
-                        .attr("class", "fa-solid fa-xmark").event_handler(|_event: events::Click|{
-                            selected_lecture().set(None);
-                            //close_lectures_modal()
-                        })
-                ),
-                None => Row::new()
-                    .s(Align::new().left())
-                    .item(
-                    TextInput::new()
-                    .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
-                    .id("subject").s(Align::new().left())
-                    .placeholder(Placeholder::with_signal(t!("filter-lectures")))
-                    .on_change(filter_lectures))
-            })
-    ).element_below_signal(
-        lecture_modal().signal().map_true(||
-            lectures_modal_view("lectures")
-        )
-    )
-}
 fn hour_view()->impl Element{
     let a = Mutable::new(false);
     Column::new().item(
@@ -274,83 +201,40 @@ fn hour_view()->impl Element{
         .on_change(change_hour)
     )
 }
-fn activity_classes()-> impl Element{
-    let a = Mutable::new(false);
-    Column::new()
-    .s(Borders::all_signal(
-        a.signal().map_bool(|| Border::new().width(1).color(BLUE_2).solid(), || Border::new().width(1).color(BLUE_1).solid())
-    ))
-    .s(RoundedCorners::new().bottom(2).top(2))
-    .on_hovered_change(move |hovered| a.set_neq(hovered))
-    .item(
-        Label::new().label_signal(t!("activity-classes"))
-    )
-    .item(
-        Label::new()
-        .s(Font::new().weight(FontWeight::ExtraLight))
-        .label_signal(t!("select-act-classes"))
-    )
-    .item(
-        Row::new()
-        .s(Gap::new().x(10))
-        .items_signal_vec(
-            act_classes().signal_vec_cloned().map(|c| 
-                Row::new()
-                .s(Padding::new().left(3).right(3))
-                .s(Gap::new().x(10))
-                .s(RoundedCorners::all(50))
-                .s(Background::new().color(GRAY_3))
-                .s(Borders::all(Border::new().width(2).solid().color(GRAY_1)))
-                .item(
-                    Button::new().label(c.label())
-                ).item_signal(
-                    selected_class().signal_cloned().map_option(move |c2|{
-                        if c2.id == c.id{
-                            RawHtmlEl::new("i")    
-                        }
-                        else{
-                            RawHtmlEl::new("i")
-                            .style("cursor", "pointer")
-                            .attr("class", "fa-solid fa-xmark")
-                            .event_handler(move |_event: events::Click|
-                                {
-                                    classes_len_signal().set(false);
-                                    act_classes().lock_mut().retain(|c2| c2.id != c.id)
-                                }
-                            )
-                        }},
-                        move || 
-                            RawHtmlEl::new("i")
-                            .style("cursor", "pointer")
-                            .attr("class", "fa-solid fa-xmark")
-                            .event_handler(move |_event: events::Click|
-                                {
-                                    classes_len_signal().set(false);
-                                    act_classes().lock_mut().retain(|c2| c2.id != c.id)    
-                                }
-                            )
-                    )
-                )
-        )).item(
-            Row::new().item_signal(
-                classes_len_signal().signal().map_false(||   
-                TextInput::new()
-                .s(
-                    Borders::all(Border::new().width(1).dotted().color(GRAY_5))
-                )
-                .id("classes")
-                .placeholder(Placeholder::with_signal(t!("filter-classes")))
-                .on_change(filter_classes))
-            ).element_below_signal(classes_modal().signal().map_true(||
-                class_modal_view("classes"))
-            )
+
+fn teachers_view()->impl Element{
+    Row::new()
+    .multiline()
+    .s(Gap::new().x(5))
+    .s(Width::growable().max(400))
+    .items_signal_vec(filtered_teachers().signal_vec_cloned().map(|teacher|{
+        Button::new()
+        .s(Padding::all(10))
+        .s(
+            Borders::all_signal(is_teacher_selected(teacher.id)
+                .map_bool(|| Border::new().width(2).color(RED_3), || Border::new().width(1).color(BLUE_3)))
         )
-    )
+        .s(RoundedCorners::all(5))
+        .label(&teacher.short_name)
+        .on_click(move||{
+            let mut tt = act_teachers().lock_mut().to_vec();
+            if tt.iter().any(|t| t.id == teacher.id){
+                tt.retain(|t| t.id != teacher.id)
+            }else{
+                tt.push(teacher.clone());
+            }
+            act_teachers().lock_mut().replace_cloned(tt)
+        })
+    }))
 }
 
+fn is_teacher_selected(id: i32)->impl Signal<Item = bool>{
+    act_teachers().signal_vec_cloned().to_signal_map(move |at| at.iter().any(move |a| a.id == id))
+}
 fn activity_teachers()-> impl Element{
     let a = Mutable::new(false);
     Column::new()
+    .s(Align::new().top())
     .s(Borders::all_signal(
         a.signal().map_bool(|| Border::new().width(1).color(BLUE_2).solid(), || Border::new().width(1).color(BLUE_1).solid())
     ))
@@ -364,222 +248,130 @@ fn activity_teachers()-> impl Element{
         .s(Font::new().weight(FontWeight::ExtraLight))
         .label_signal(t!("select-act-teachers"))
     )
-    .item(
-        Row::new()
-        .s(Gap::new().x(10))
-        .items_signal_vec(
-            act_teachers().signal_vec_cloned()
-            .map(|t| 
-                Row::new()
-                .s(Padding::new().left(3).right(3))
-                .s(Gap::new().x(10))
-                .s(RoundedCorners::all(50))
-                .s(Background::new().color(GRAY_3))
-                .s(Borders::all(Border::new().width(2).solid().color(GRAY_5)))
-                .item(
-                    Button::new().label(t.first_name)
-                )
-                .item_signal(
-                    selected_teacher().signal_cloned().map_option(move |t2|{
-                        if t2 == t.id{
-                            RawHtmlEl::new("i")    
-                        }
-                        else{
-                            RawHtmlEl::new("i")
-                            .style("cursor", "pointer")
-                            .attr("class", "fa-solid fa-xmark")
-                            .event_handler(move |_event: events::Click|
-                                {
-                                    teachers_len_signal().set(false);
-                                    act_teachers().lock_mut().retain(|t2| t2.id != t.id)
-                                }
-                            )
-                        }},
-                        move || 
-                            RawHtmlEl::new("i")
-                            .style("cursor", "pointer")
-                            .attr("class", "fa-solid fa-xmark")
-                            .event_handler(move |_event: events::Click|
-                                {
-                                    teachers_len_signal().set(false);
-                                    act_teachers().lock_mut().retain(|t2| t2.id != t.id)    
-                                }
-                            )
-                    )
-                )
-            )
-        ).item(
-            Row::new().item_signal(
-                teachers_len_signal().signal().map_false(||   
-                TextInput::new()
-                .s(
-                    Borders::all(Border::new().width(1).dotted().color(GRAY_1))
-                )
-                .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
-                .id("teachers")
-                .placeholder(Placeholder::with_signal(t!("filter-teachers")))
-                .on_change(filter_teachers))
-            ).element_below_signal(teachers_modal().signal().map_true(||
-                teacher_modal_view("teachers"))
-            )
-        )
+    .item( TextInput::new()
+        .id("a")
+        .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
+        .placeholder(Placeholder::with_signal(t!("filter-teachers")))
+        .on_change(filter_teachers)
     )
+    .item(teachers_view())
+}
+fn is_class_selected(id: i32)->impl Signal<Item = bool>{
+    act_classes().signal_vec_cloned().to_signal_map(move |at| at.iter().any(move |a| a.id == id))
+}
+fn activity_classes()-> impl Element{
+    let a = Mutable::new(false);
+    Column::new()
+    .s(Align::new().top())
+    .s(Borders::all_signal(
+        a.signal().map_bool(|| Border::new().width(1).color(BLUE_2).solid(), || Border::new().width(1).color(BLUE_1).solid())
+    ))
+    .s(RoundedCorners::new().bottom(2).top(2))
+    .on_hovered_change(move |hovered| a.set_neq(hovered))
+    .item(
+        Label::new().label_signal(t!("activity-classes"))
+    )
+    .item(
+        Label::new()
+        .s(Font::new().weight(FontWeight::ExtraLight))
+        .label_signal(t!("select-act-classes"))
+    )
+    .item( TextInput::new()
+        .id("b")
+        .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
+        .placeholder(Placeholder::with_signal(t!("filter-classes")))
+        .on_change(filter_classes)
+    )
+    .item(classes_view())
+}
+fn classes_view()->impl Element{
+    Row::new()
+    .multiline()
+    .s(Gap::new().x(5))
+    .s(Width::growable().max(400))
+    .items_signal_vec(filtered_classes().signal_vec_cloned().map(|class|{
+        Button::new()
+        .s(Padding::all(10))
+        .s(
+            Borders::all_signal(is_class_selected(class.id)
+                .map_bool(|| Border::new().width(2).color(RED_3), || Border::new().width(1).color(BLUE_3)))
+        )
+        .s(RoundedCorners::all(5))
+        .label(format!("{}{}",class.kademe, class.sube))
+        .on_click(move||{
+            let mut tt = act_classes().lock_mut().to_vec();
+            if tt.iter().any(|c| c.id == class.id){
+                tt.retain(|c| c.id != class.id)
+            }else{
+                tt.push(class.clone());
+            }
+            act_classes().lock_mut().replace_cloned(tt)
+        })
+    }))
 }
 
-pub fn lectures_modal_view(id: &str) -> impl zoon::Element {
-    run_once!(|| {
-        global_styles().style_group(StyleGroup::new(".below > *").style("pointer-events", "auto"));
-    });
-    //use zoon::HasIds;
-    zoon::Column::new()
-        .id("class_modal")
-        .s(Background::new().color(hsluv!(200,100,100)))
-        .s(Borders::all(Border::new().width(1).solid()))
-        //.s(zoon::Width::exact(50))
-        .s(zoon::Align::new().right())
-        .s(zoon::Padding::all(5))
-        .on_click_outside_with_ids(close_lectures_modal, [id])
-        //.after_remove(|_| crate::header::close_menu())
-        .items_signal_vec(
-            filtered_lectures().signal_vec_cloned()
-            .map(|lecture|{
-                Button::new()
-                .label(
-                    format!("{}", &lecture.name)
-                )
-                .s(Height::exact(15))
-                .on_click(move ||{
-                    lecture_modal().set(false);
-                    selected_lecture().set(Some(lecture.clone()));
-                })
-            })
-        )
-        //.on_click(|| set_lang("a"))
-        .update_raw_el(|raw_el| {
-            raw_el
-                .class("below")
-                .style("display", "flex")
-                .style("flex-direction", "column")
-                .style("position", "absolute")
-                .style("top", "100%")
-                .style("left", "0")
-                //.style("width", "100%")
-                .style("pointer-events", "none")
-                .style("z-index", "100")
-        })
+fn is_lecture_selected(id: i32)->impl Signal<Item = bool>{
+    selected_lecture().signal_ref(move|lec|{
+        if let Some(l) = lec{
+            if l.id == id{
+                true
+            }
+            else{
+                false    
+            }
+        }
+        else{
+            false
+        }
+    })
 }
-pub fn class_modal_view(id: &str) -> impl zoon::Element {
-    run_once!(|| {
-        global_styles().style_group(StyleGroup::new(".below > *").style("pointer-events", "auto"));
-    });
-    //use zoon::HasIds;
-    zoon::Column::new()
-        .id("class_modal")
-        .s(Background::new().color(hsluv!(200,100,100)))
-        .s(Borders::all(Border::new().width(1).solid()))
-        //.s(zoon::Width::exact(50))
-        .s(zoon::Align::new().right())
-        .s(zoon::Padding::all(5))
-        .on_click_outside_with_ids(close_classes_modal, [id])
-        //.after_remove(|_| crate::header::close_menu())
-        .items_signal_vec(
-            filtered_classes().signal_vec_cloned()
-            .map(|class|{
-                Button::new()
-                .label(
-                    class.label()
-                )
-                .s(Height::exact(15))
-                .on_click(move ||{
-                    classes_modal().set(false);
-                    act_classes().lock_mut().push_cloned(class.clone());
-                    if act_classes().lock_mut().to_vec().len() >= 2{
-                        classes_len_signal().set(true);
-                    }
-                })
-            })
-        )
-        //.on_click(|| set_lang("a"))
-        .update_raw_el(|raw_el| {
-            raw_el
-                .class("below")
-                .style("display", "flex")
-                .style("flex-direction", "column")
-                .style("position", "absolute")
-                .style("top", "100%")
-                .style("left", "0")
-                //.style("width", "100%")
-                .style("pointer-events", "none")
-                .style("z-index", "100")
-        })
+fn activity_lecture()-> impl Element{
+    let a = Mutable::new(false);
+    Column::new()
+    .s(Borders::all_signal(
+        a.signal().map_bool(|| Border::new().width(1).color(BLUE_4).solid(), || Border::new().width(1).color(BLUE_2).solid())
+    ))
+    .s(RoundedCorners::new().bottom(2).top(2))
+    .on_hovered_change(move |hovered| a.set_neq(hovered))
+    .s(Align::new().top())
+    .item(
+        Label::new().label_signal(t!("lecture"))
+    )
+    .item(
+        Label::new()
+        .s(Font::new().weight(FontWeight::ExtraLight))
+        //.label("label")
+        .label_signal(t!("select-lecture"))
+    )
+    .item( TextInput::new()
+        .id("b")
+        .s(Borders::all(Border::new().width(1).dotted().color(GRAY_5)))
+        .placeholder(Placeholder::with_signal(t!("filter-lectures")))
+        .on_change(filter_lectures)
+    )
+    .item(lectures_view())
 }
-pub fn teacher_modal_view(id: &str) -> impl zoon::Element {
-    run_once!(|| {
-        global_styles().style_group(StyleGroup::new(".below > *").style("pointer-events", "auto"));
-    });
-    //use zoon::HasIds;
-    zoon::Column::new()
-        .id("class_modal")
-        .s(Background::new().color(hsluv!(200,100,100)))
+fn lectures_view()->impl Element{
+    Row::new()
+    .multiline()
+    .s(Gap::new().x(5))
+    .s(Width::growable().max(400))
+    //.item("item")
+    .items_signal_vec(filtered_lectures().signal_vec_cloned().map(|lec|{
+        Button::new()
+        .s(Padding::all(10))
         .s(
-            Borders::new()
-            .top(Border::new()
-                .width(1).solid()
-            ).right(Border::new()
-                .width(1).solid())
-            .left(Border::new()
-                .width(1).solid())
+            Borders::all_signal(
+                is_lecture_selected(lec.id)
+                .map_bool(|| Border::new().width(2).color(RED_3), || Border::new().width(1).color(BLUE_3))
+            )
         )
-        .s(zoon::Width::exact(150))
-        .s(zoon::Align::new().right())
-        //.s(zoon::Padding::all(5))
-        .on_click_outside_with_ids(close_teachers_modal, [id])
-        //.after_remove(|_| crate::header::close_menu())
-        .items_signal_vec(
-            filtered_teachers().signal_vec_cloned()
-            .map(|teacher|{
-                Button::new()
-                .s(Height::exact(25))
-                .s(Borders::new().bottom(Border::new().width(1).solid()))
-                .label(
-                    Label::new()
-                    .s(Align::center())
-                    .s(Cursor::new(CursorIcon::Pointer))
-                    .label(
-                        format!("{} {}", teacher.first_name, teacher.last_name)
-                    )
-                )
-                .on_click(move ||{
-                    teachers_modal().set(false);
-                    act_teachers().lock_mut().push_cloned(teacher.clone());
-                    if act_teachers().lock_mut().to_vec().len() >= 2{
-                        teachers_len_signal().set(true);
-                    }
-                })
-            })
-        )
-        //.on_click(|| set_lang("a"))
-        .update_raw_el(|raw_el| {
-            raw_el
-                .class("below")
-                .style("display", "flex")
-                .style("flex-direction", "column")
-                .style("position", "absolute")
-                .style("top", "100%")
-                .style("left", "0")
-                //.style("width", "100%")
-                .style("pointer-events", "none")
-                .style("z-index", "100")
+        .s(RoundedCorners::all(5))
+        .label(format!("{}",lec.short_name))
+        .on_click(move||{
+            selected_lecture().set(Some(lec.clone()));
         })
-}
-fn close_lectures_modal(){
-    lecture_modal().set(!lecture_modal().get())
-}
-fn close_classes_modal(){
-    classes_modal().set(false)
-}
-fn close_teachers_modal(){
-    classes_modal().set(false)
+    }))
 }
 
 pub fn send_act(){
